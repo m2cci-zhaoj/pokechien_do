@@ -52,7 +52,7 @@ public class ParticipantsCtrler {
         String query = """
             SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test.participants p 
             LEFT JOIN test.stops s ON p.participant_id = s.participant_id 
-               WHERE p.nom like ? GROUP BY nom, prenom, p.participant_id
+               WHERE p.participant_id = ? GROUP BY nom, prenom, p.participant_id
                    """;
         return jdbcTemplate.query(query, // la requête (prepared statement)
                 new Object[] { id }, // un tableau d'objets contenant les valeurs à substituer
