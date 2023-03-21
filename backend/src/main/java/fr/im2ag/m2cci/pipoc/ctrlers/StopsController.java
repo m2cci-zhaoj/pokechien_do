@@ -5,7 +5,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import static java.sql.Types.*;
+
+import fr.im2ag.m2cci.pipoc.dto.Stop;
 
 @RestController
 public class StopsController {
@@ -56,6 +62,21 @@ public class StopsController {
 					// {"type" : "FeatureCollection", "features" : null}
 					return ("");
 				});
+	}
+
+	@CrossOrigin
+	@PostMapping(path = "/stop")
+	// @PostMapping(path = "/stop", consumes = "application/json", produces = "application/json")
+	public String addStop(@RequestBody Stop stop) {
+		String query = """
+				INSERT into test.stops(participant_id, geom)
+				     values (?, ST_GeomFromText(?, 4326));
+					""";
+		jdbcTemplate.update(query,
+				new Object[] { stop.participantId(), stop.toWKT() },
+				new int[] { INTEGER, VARCHAR }
+		);
+		return "OK";
 	}
 
 }
