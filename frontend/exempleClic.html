@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PI POC</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+
+        .leaflet-grab {
+            cursor: auto;
+        }
+
+        .leaflet-dragging .leaflet-grab {
+            cursor: move;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col">
+                    <div class="mb-3 mt-3">
+
+                        <form @submit.prevent="findParticipants">
+                            <label for="name">Nom :</label>
+                            <input id="name" type="text" v-model="participantName">
+                            <button type="submit">Chercher</button>
+                        </form>
+                        <div v-if="!errorMessage && participants.length > 0 ">
+                            <li v-for="participant in participants" :key="participant.id">
+                                {{displayInfos(participant)}}
+                                <span v-if="participant.nbreStops > 0">
+                                    <input type="color" :value="participant.markerColor"
+                                        @change="changeColor($event, participant)">
+                                    <button v-if="participant.stopsVisible" @click="hideStops(participant)">
+                                        Cacher Stops
+                                    </button>
+                                    <button v-else @click="displayStops(participant)">Voir Stops</button>
+                                </span>
+                            </li>
+                        </div>
+                        <div v-if="errorMessage">
+                            <p>Erreur : {{ errorMessage }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+
+    <script src="js/demoPost.js"></script>
+
+</body>
+
+
+</html>
