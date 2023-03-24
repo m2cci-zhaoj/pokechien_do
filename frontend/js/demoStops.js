@@ -1,4 +1,6 @@
 const participantsUrl = "http://localhost:8080/participants/find?nom=";
+let myModal = null;
+
 
 const app = Vue.createApp({
 	data() {
@@ -7,7 +9,8 @@ const app = Vue.createApp({
 			participants: [], // liste des participants trouvés correspondant à l'adresse saisie
 			map: null, // la map associée à la vue
 			errorMessage: null, // pour afficher des messages d'erreur
-            selectedStop : null, // le stop sélectionné
+			selectedStop: null, // le stop sélectionné
+			selectedStopComment: null, // le commentaire du stop sélectionné
 			colors: ["#e9002c", "#c7ff39", "#bba958", "#c1ca7f", "#d8e7ad", "#edcf6e", "#dca28a", "#c27990", "#a0577f", "#744348"],
 		};
 	},
@@ -43,7 +46,7 @@ const app = Vue.createApp({
 			}
 		},
 		async displayStops(participant) {
-            let self = this;
+			let self = this;
 			if (!participant.stopsLayer) {
 				let geojsonMarkerOptions = {
 					radius: 8,
@@ -65,18 +68,18 @@ const app = Vue.createApp({
 						//  date fin : ${feature.properties.date_fin}
 						// `);
 						layer.on("click", (evt) => {
-                            console.log("click " +evt.target.defaultOptions.fillColor) ;
-                            self.selectedStop = feature.properties;
-                            const myModal = new bootstrap.Modal(document.getElementById('featureDetails'));
-                            const myModalEl = document.getElementById('featureDetails')
-                            myModalEl.addEventListener('hidden.bs.modal', event => {
-                                evt.target.setStyle({fillColor : evt.target.defaultOptions.fillColor});
-                              })
-                              
-                            evt.target.setStyle({fillColor : 'red'});
-                            myModal.show();
+							console.log("click " + evt.target.defaultOptions.fillColor);
+							self.selectedStop = feature.properties;
+							self.selectedStopComment = self.selectedStop.commentaire;
+							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
+							const myModalEl = document.getElementById("featureDetails");
+							myModalEl.addEventListener("hidden.bs.modal", (event) => {
+								evt.target.setStyle({ fillColor: evt.target.defaultOptions.fillColor });
+							});
 
-                        });
+							evt.target.setStyle({ fillColor: "red" });
+							myModal.show();
+						});
 					},
 				});
 			}
@@ -98,6 +101,25 @@ const app = Vue.createApp({
 		},
 		displayInfos(participant) {
 			return `id : ${participant.id} Nom : ${participant.nom} Prenom : ${participant.prenom} Nbre stops : ${participant.nbreStops}`;
+		},
+		async updateStop() {
+			console.log(this.selectedStopComment);
+			this.selectedStop.commentaire = this.selectedStopComment;
+			let stop = {
+				stopId: this.selectedStop.stop_id,
+				participantId: this.selectedStop.particpantId,
+				latitude: 0, // n'a pas d'importance pour la mise à jour
+				longitude: 0, // n'a pas d'importance pour la mise à jour
+				commentaire: this.selectedStopComment,
+			};
+			await fetch("http://localhost:8080/stop", {
+				method: "POST",
+				body: JSON.stringify(stop),  // transforme l'opbjet post en chaîne JSON
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+			myModal.hide();
 		},
 	},
 	mounted() {
