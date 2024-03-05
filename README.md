@@ -1,10 +1,10 @@
 # POC (Proof Of Concepts) pour le projet d'intégration
 
-Ce projet contient le code pour une application servant de preuve de concepts pour le projet d'intégration du M2CCI/GEOMASS2. Il contient 3 dossiers :
+Ce projet contient le code pour une application servant de preuve de concepts (POC ou Proof Of concepet) pour le projet d'intégration du M2CCI/M2 GEOMAS. Il contient 3 dossiers :
 
-- **bd** : ce dossier contient les scripts de création de la base de données Postgres/PostGIS. **Attention**, avant d'exécuter les scripts il faudra 
-au préalable que vous ayez créé un schema test sur votre base.
-- **backend** : ce dossier contient le code source du backend (Springboot/Java) qui peremt d'offrir un API REST pour l'accès aux données de la base
+- **bd** : ce dossier regroupe les scripts de création de la base de données Postgres/PostGIS. **Attention**, avant d'exécuter les scripts il faudra 
+au préalable que vous ayez créé un schema <kbd>test</kbd> sur votre base.
+- **backend** : ce dossier contient le code source du backend (Springboot/Java) qui permet d'offrir un API REST pour l'accès aux données de la base
 - **frontend** : ce dossier contient le code source du front-end (il utilise Leaflet pour le web Mapping et Vue3)
 
 Pour pouvoir exécuter cette application il faut 
