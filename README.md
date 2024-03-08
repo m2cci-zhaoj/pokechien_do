@@ -11,8 +11,8 @@ Ce projet contient le code pour une application servant de preuve de concepts (P
 
 Pour pouvoir exécuter cette application il faut 
 
-1. vous connecter à votre base de donnés (par exemple avec le clien pgadmin) et exécuter les scripts **createSchema.sql** puis **createData.sql** situés dans le dossier bd
-3. Si vous utiliser une base de donnée autre que la base PostgreSQL de l'IUGA (par exemple un base locale) modifier le fichier **application.properties** situé dans le back-end (chemin d'accès `backend/src/main/resources`) afin 
+1. vous connecter à votre base de donnés (par exemple avec le client pgadmin) et exécuter les scripts **createSchema.sql** puis **createData.sql** situés dans le dossier bd
+3. Si vous utilisez une base de données autre que la base PostgreSQL de l'IUGA (par exemple un base locale) modifier le fichier **application.properties** situé dans le back-end (chemin d'accès `backend/src/main/resources`) afin 
 d'accéder à votre base de données (voir les indications en commentaire dans ce fichier).
 4. lancer le serveur back-end en exécutant le *main* de la classe  **SpringjdbcApplication** (situé dans `main/java`) et si vous utilisez la base de données de l'IUGA renseignez vos identifiants de connexion (login et mot de passe)
 5. ouvrir avec LiveShare la page **index.html** du front-end
