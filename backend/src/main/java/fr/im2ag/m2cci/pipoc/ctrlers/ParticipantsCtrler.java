@@ -28,8 +28,8 @@ public class ParticipantsCtrler {
     public List<Participant> find(@RequestParam(value = "nom", defaultValue = "") String nom) {
         nom = nom + "%";
         String query = """
-                SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test.participants p
-                LEFT JOIN test.stops s ON p.participant_id = s.participant_id
+                SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test_pi.participants p
+                LEFT JOIN test_pi.stops s ON p.participant_id = s.participant_id
                    WHERE p.nom like ? GROUP BY nom, prenom , p.participant_id
                    ORDER BY nom""";
         return jdbcTemplate.query(query, // la requête (prepared statement)
@@ -51,8 +51,8 @@ public class ParticipantsCtrler {
     @GetMapping("/{id}")
     public Participant participant(@PathVariable("id") int id) {
         String query = """
-                SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test.participants p
-                LEFT JOIN test.stops s ON p.participant_id = s.participant_id
+                SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test_pi.participants p
+                LEFT JOIN test_pi.stops s ON p.participant_id = s.participant_id
                    WHERE p.participant_id = ? GROUP BY nom, prenom, p.participant_id
                        """;
         return jdbcTemplate.query(query, // la requête (prepared statement)

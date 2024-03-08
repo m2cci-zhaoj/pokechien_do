@@ -6,7 +6,7 @@ const app = Vue.createApp({
 	data() {
 		return {
 			participantName: "", // valeur de nom pour la recherche de participants
-			participants: [], // liste des participants trouvés correspondant à l'adresse saisie
+			participants: [], // liste des participants trouvés correspondant au nom participant saisi
 			map: null, // la map associée à la vue
 			errorMessage: null, // pour afficher des messages d'erreur
 			selectedStop: null, // le stop sélectionné
