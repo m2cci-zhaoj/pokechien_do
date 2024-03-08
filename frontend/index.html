@@ -27,7 +27,7 @@
                             <label for="name" class="form-label">Nom : </label>
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control" id="name" placeholder="nom à chercher">
+                            <input type="text" class="form-control" id="name" v-model="participantName" placeholder="nom à chercher">
                         </div>
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary mb-3">Chercher</button>
@@ -55,10 +55,10 @@
                             </td>
                             <td v-if="participant.nbreStops > 0">
                                     <svg v-if="participant.stopsVisible" @click="hideStops(participant)" class="bi" width="32" height="32" fill="currentColor">
-                                        <use xlink:href="bootstrap-icons.svg#eye-slash-fill" />
+                                        <use xlink:href="bootstrap-icons.svg#eye-fill" />
                                     </svg>
                                     <svg v-else @click="displayStops(participant)" class="bi" width="32" height="32" fill="currentColor">
-                                        <use xlink:href="bootstrap-icons.svg#eye-fill" />
+                                        <use xlink:href="bootstrap-icons.svg#eye-slash-fill" />
                                     </svg>
                             </td>
                         </tr>

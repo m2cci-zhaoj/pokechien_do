@@ -31,7 +31,7 @@ public class StopsController {
 				    'features', json_agg(ST_AsGeoJSON(t.*)::json)
 				  )
 				FROM
-				test.stops AS t""";
+				test_pi.stops AS t""";
 		return jdbcTemplate.queryForObject(query, String.class);
 	}
 
@@ -45,7 +45,7 @@ public class StopsController {
 					  'features', json_agg(ST_AsGeoJSON(t.*)::json)
 					)
 				  FROM
-					test.stops AS t
+					test_pi.stops AS t
 				  WHERE
 					t.participant_id = ?
 				""";
@@ -58,7 +58,8 @@ public class StopsController {
 					if (rs.next()) {
 						return rs.getString(1); // le résultat de la requête est une chaîne GeoJSON
 					}
-					// pas de stops , mais on devrait jamais arriver ici car si il n'existe pas de
+					// pas de stops , mais on ne devrait jamais arriver ici car si il n'existe pas
+					// de
 					// stops pour le participant, la requête renvoie tout de même une réponse
 					// GeoJSOn avec l'attibut features égal à null:
 					// {"type" : "FeatureCollection", "features" : null}
@@ -68,30 +69,30 @@ public class StopsController {
 
 	@CrossOrigin
 	@PutMapping(path = "/stop")
-	// @PostMapping(path = "/stop", consumes = "application/json", produces = "application/json")
+	// @PostMapping(path = "/stop", consumes = "application/json", produces =
+	// "application/json")
 	public String addStop(@RequestBody Stop stop) {
 		String query = """
-				INSERT into test.stops(participant_id, geom)
+				INSERT into test_pi.stops(participant_id, geom)
 				     values (?, ST_GeomFromText(?, 4326));
 					""";
 		jdbcTemplate.update(query,
 				new Object[] { stop.participantId(), stop.toWKT() },
-				new int[] { INTEGER, VARCHAR }
-		);
+				new int[] { INTEGER, VARCHAR });
 		return "OK";
 	}
 
 	@CrossOrigin
 	@PostMapping(path = "/stop")
-	// @PostMapping(path = "/stop", consumes = "application/json", produces = "application/json")
+	// @PostMapping(path = "/stop", consumes = "application/json", produces =
+	// "application/json")
 	public String updateStop(@RequestBody Stop stop) {
 		String query = """
-			UPDATE test.stops SET commentaire = ? WHERE stop_id = ?
-					""";
+				UPDATE test_pi.stops SET commentaire = ? WHERE stop_id = ?
+						""";
 		jdbcTemplate.update(query,
 				new Object[] { stop.commentaire(), stop.stopId() },
-				new int[] { VARCHAR, INTEGER }
-		);
+				new int[] { VARCHAR, INTEGER });
 		return "OK";
 	}
 
