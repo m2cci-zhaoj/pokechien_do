@@ -12,7 +12,7 @@
 	<artifactId>backend-pi-poc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>springjdbc</name>
-	<description>Test d&apos;un projet MVC avec postgres etspring jdbc</description>
+	<description>Test d&apos;un projet MVC avec postgres et spring jdbc</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
