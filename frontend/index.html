@@ -34,38 +34,43 @@
                             <button type="submit" class="btn btn-primary mb-3">Chercher</button>
                         </div>
                     </form>
-                    <table v-if="!errorMessage && participants.length > 0 " class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">id</th>
-                                <th scope="col">Prénom</th>
-                                <th scope="col">Nom</th>
-                                <th scope="col"># Stops</th>
-                                <th scope="col">Couleur</th>
-                                <th scope="col">Visibilité</th>
+                    <template v-if="participants">
+                        <table v-if="participants.length > 0 " class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">id</th>
+                                    <th scope="col">Prénom</th>
+                                    <th scope="col">Nom</th>
+                                    <th scope="col"># Stops</th>
+                                    <th scope="col">Couleur</th>
+                                    <th scope="col">Visibilité</th>
+                                </tr>
+                            </thead>
+                            <tr v-for="participant in participants" :key="participant.id">
+                                <td>{{participant.id}}</td>
+                                <td>{{participant.prenom}}</td>
+                                <td>{{participant.nom}}</td>
+                                <td>{{participant.nbreStops}}</td>
+                                <td v-if="participant.nbreStops > 0">
+                                    <input type="color" :value="participant.markerColor"
+                                        @change="changeColor($event, participant)" />
+                                </td>
+                                <td v-if="participant.nbreStops > 0">
+                                    <svg v-if="participant.stopsVisible" @click="hideStops(participant)" class="bi"
+                                        width="32" height="32" fill="currentColor">
+                                        <use xlink:href="bootstrap-icons.svg#eye-fill" />
+                                    </svg>
+                                    <svg v-else @click="displayStops(participant)" class="bi" width="32" height="32"
+                                        fill="currentColor">
+                                        <use xlink:href="bootstrap-icons.svg#eye-slash-fill" />
+                                    </svg>
+                                </td>
                             </tr>
-                        </thead>
-                        <tr v-for="participant in participants" :key="participant.id">
-                            <td>{{participant.id}}</td>
-                            <td>{{participant.prenom}}</td>
-                            <td>{{participant.nom}}</td>
-                            <td>{{participant.nbreStops}}</td>
-                            <td v-if="participant.nbreStops > 0">
-                                <input type="color" :value="participant.markerColor"
-                                    @change="changeColor($event, participant)" />
-                            </td>
-                            <td v-if="participant.nbreStops > 0">
-                                <svg v-if="participant.stopsVisible" @click="hideStops(participant)" class="bi"
-                                    width="32" height="32" fill="currentColor">
-                                    <use xlink:href="bootstrap-icons.svg#eye-fill" />
-                                </svg>
-                                <svg v-else @click="displayStops(participant)" class="bi" width="32" height="32"
-                                    fill="currentColor">
-                                    <use xlink:href="bootstrap-icons.svg#eye-slash-fill" />
-                                </svg>
-                            </td>
-                        </tr>
-                    </table>
+                        </table>
+                        <p v-else>
+                            Pas de participant dont le nom débute par {{participantName}}
+                        </p>
+                    </template>
                     <!-- Dialogue Modal pour afficher les détails du feature sélectionné -->
                     <div class="modal fade" id="featureDetails" data-bs-backdrop="static" data-bs-keyboard="false"
                         tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -105,8 +110,35 @@
                             </div>
                         </div>
                     </div>
-                    <div v-if="errorMessage">
-                        <p>Erreur : {{ errorMessage }}</p>
+                    <!-- Dialogue Modal pour afficher les messages d'erreur-->
+                    <div id="errorDialog" class="modal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <a title="OpenClipart-Vectors, CC0, via Wikimedia Commons"
+                                            href="https://commons.wikimedia.org/wiki/File:Alert-Stop-Warning-Error_icon.svg"><img
+                                                width="32" alt="Alert-Stop-Warning-Error icon"
+                                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Alert-Stop-Warning-Error_icon.svg/32px-Alert-Stop-Warning-Error_icon.svg.png"></a>
+                                        &nbsp;&nbsp;<strong>Erreur</strong>
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div v-if="erreur" class="modal-body">
+                                    <p>{{erreur.name}}</p>
+                                    <p>{{erreur.message}}</p>
+                                    <template v-if="erreur.name ==='APIError'">
+                                        <p>url: {{ erreur.url}}</p>
+                                        <p>status code : {{ erreur.status}}  {{ erreur.statusText }}</p>
+                                    </template>
+                                    <p>Pour plus de détails consultez la console JavaScript</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -1,17 +1,25 @@
 const participantsUrl = "http://localhost:8080/participants/find?nom=";
 let myModal = null;
+class APIError extends Error {
+    constructor(mess, status, statusText, url) {
+        super(mess);
+        this.name = 'APIError';
+        this.status = status;
+        this.statusText = statusText;
+        this.url = url;
+    }
+}
 
-
-const app = Vue.createApp({
+const vueApp = Vue.createApp({
 	data() {
 		return {
 			participantName: "", // valeur de nom pour la recherche de participants
-			participants: [], // liste des participants trouvés correspondant au nom participant saisi
+			participants: null, // liste des participants trouvés correspondant au nom de participant saisi
 			map: null, // la map associée à la vue
-			errorMessage: null, // pour afficher des messages d'erreur
 			selectedStop: null, // le stop sélectionné
 			selectedStopComment: null, // le commentaire du stop sélectionné
 			colors: ["#e9002c", "#c7ff39", "#bba958", "#c1ca7f", "#d8e7ad", "#edcf6e", "#dca28a", "#c27990", "#a0577f", "#744348"],
+			erreur : null, // objet Error en cas d'erreur d'exécution
 		};
 	},
 	methods: {
@@ -19,31 +27,23 @@ const app = Vue.createApp({
 		 * pour chercher un participant
 		 */
 		async findParticipants() {
-			this.errorMessage = null;
-			try {
-				if (this.participants.length > 0) {
+				if (this.participants && this.participants.length > 0) {
 					for (let participant of this.participants) {
 						if (participant.stopsLayer) participant.stopsLayer.remove(this.map);
 					}
 				}
+				this.participants = null;
 				let response = await fetch(participantsUrl + encodeURI(this.participantName));
 				if (response.ok) {
-					let data = await response.json();
-					if (data.length > 0) {
-						this.participants = data;
-						for (let i = 0; i < data.length; i++) {
+					this.participants = await response.json();
+					if (this.participants.length > 0) {
+						for (let i = 0; i < this.participants.length; i++) {
 							this.participants[i].markerColor = this.colors[i % this.colors.length];
 						}
-					} else {
-						this.errorMessage = `Pas de participant dont le nom contient ${this.participantName}`;
-					}
+					} 
 				} else {
-					this.errorMessage = "Erreur " + response.status;
+					throw new APIError(`Erreur API recherche de participants`,response.status,response.statusText,response.url);   
 				}
-			} catch (error) {
-				console.error(error);
-				this.errorMessage = "Erreur " + error.message;
-			}
 		},
 		async displayStops(participant) {
 			let self = this;
@@ -133,4 +133,20 @@ const app = Vue.createApp({
 			zoomOffset: -1,
 		}).addTo(this.map);
 	},
-}).mount("#app");
+});
+vueApp.config.errorHandler = (err, instance, info) => {
+	console.log("Erreur **************************************");
+	console.log("Message : " + err.message);
+	console.log(`vueApp.erreur : ${vueApp.erreur}`);
+	console.log(`info : ${info}`);
+    console.error(err);
+
+	const error = Vue.toRef(instance, "erreur");
+	error.value = err;
+
+	// recupérer l'instance de la fenêtre modale pour l'affichage des erreurs
+	// et l'afficher
+	const modal = bootstrap.Modal.getOrCreateInstance("#errorDialog");
+	modal.show();
+};
+vueApp.mount("#app");
