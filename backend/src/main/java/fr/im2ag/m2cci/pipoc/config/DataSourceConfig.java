@@ -1,4 +1,4 @@
-package fr.im2ag.m2cci.pipoc.beans;
+package fr.im2ag.m2cci.pipoc.config;
 
 import java.io.Console;
 import java.sql.Connection;
@@ -60,11 +60,12 @@ public class DataSourceConfig {
         DataSource ds = null;
         String connectionMode = console.readLine("Connexion BD IUGA O/N (O défaut, N utilisation de application.propertie)? ");
         if ( connectionMode.isBlank() || connectionMode.matches("(?i)[yo].*")) {
-            logger.info("Connexion à la BD IUGA");
-            userName = console.readLine("Identifiant : ");
+            logger.info("Connexion à une BD IUGA");
+            String bdName = console.readLine("Nom de la base de données (bd_xxx où xxx est un identifiant de l'utilisateur): ");
+            userName = console.readLine("Identifiant (identifiant d'un utilisateur ayant les droits sur la bd) : ");
             char[] passwordArray = console.readPassword("Mot de passe : ");
             driverClassName = "org.postgresql.Driver";
-            url = "jdbc:postgresql://129.88.175.104:5432/bd_" + userName;
+            url = "jdbc:postgresql://129.88.175.104:5432/" + bdName;
             userPassword= new String(passwordArray);
         }
 
