@@ -26,24 +26,31 @@ public class ParticipantsCtrler {
     @CrossOrigin
     @GetMapping("/find")
     public List<Participant> find(@RequestParam(value = "nom", defaultValue = "") String nom) {
-        nom = nom + "%";
-        String query = """
-                SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test_pi.participants p
-                LEFT JOIN test_pi.stops s ON p.participant_id = s.participant_id
-                   WHERE p.nom like ? GROUP BY nom, prenom , p.participant_id
-                   ORDER BY nom""";
-        return jdbcTemplate.query(query, // la requête (prepared statement)
-                new Object[] { nom }, // un tableau d'objets contenant les valeurs à substituer
-                new int[] { java.sql.Types.VARCHAR }, // tableau d'entiers indiquant les types SQL des valeurs à
-                                                      // substituer
-                (rs) -> { // traitement du ResultSet
-                    List<Participant> lesParticipants = new ArrayList<>();
-                    while (rs.next()) {
-                        lesParticipants.add(new Participant(rs.getInt("participant_id"), rs.getString("nom"),
-                                rs.getString("prenom"), rs.getInt("nbre_stops")));
-                    }
-                    return lesParticipants;
-                });
+        try {
+            nom = nom + "%";
+            String query = """
+                    SELECT count(geom) as nbre_stops, nom, prenom, p.participant_id FROM test_pi.participants p
+                    LEFT JOIN test_pi.stops s ON p.participant_id = s.participant_id
+                       WHERE p.nom like ? GROUP BY nom, prenom , p.participant_id
+                       ORDER BY nom""";
+
+            return jdbcTemplate.query(query, // la requête (prepared statement)
+                    new Object[] { nom }, // un tableau d'objets contenant les valeurs à substituer
+                    new int[] { java.sql.Types.VARCHAR }, // tableau d'entiers indiquant les types SQL des valeurs à
+                                                          // substituer
+                    (rs) -> { // traitement du ResultSet
+                        List<Participant> lesParticipants = new ArrayList<>();
+                        while (rs.next()) {
+                            lesParticipants.add(new Participant(rs.getInt("participant_id"), rs.getString("nom"),
+                                    rs.getString("prenom"), rs.getInt("nbre_stops")));
+                        }
+                        return lesParticipants;
+                    });
+        } catch (Exception e) {
+            System.out.println("EXCEPTION **********************");
+            System.out.println(e.getClass().getName() + " " + e.getClass().getPackageName());
+            throw e;
+        }
 
     }
 
