@@ -1,0 +1,39 @@
+services:
+
+   # postgres + psotgis
+   postgis-16-3.4:
+       image: postgis/postgis:16-3.4
+       ports:  #outside:inside(container)
+            - 5432:5432
+       networks:
+            - shared-network 
+       volumes:
+            - ./vol_data:/mnt:rw  # montage dir vol_data du hôte sur /mnt du conteneur
+            - pgdata:/var/lib/postgresql/data
+       environment: 
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=password
+       container_name: postgis
+
+   # pgadmin4
+   pgadmin4:
+       image: dpage/pgadmin4
+       container_name: pgadmin
+       environment: 
+        - PGADMIN_DEFAULT_EMAIL=admin@admin.fr
+        - PGADMIN_DEFAULT_PASSWORD=password
+       ports:
+        - 8081:80  #outside:inside(container)
+       networks:
+        - shared-network
+       volumes:
+         - pgadminData:/var/lib/pgadmin/
+   #      - C:/Users/philippe/Desktop/POOJava/PI_POC:/var/lib/pgadmin/data
+       depends_on: 
+         - postgis-16-3.4
+
+volumes:
+    pgdata:
+    pgadminData:
+networks:
+    shared-network:
