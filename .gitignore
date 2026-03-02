@@ -1,0 +1,16 @@
+_ARCHIVES
+.build
+*~
+# Python / Jython
+
+*$py.class
+*.py[cod]
+__pycache__/
+
+# OpenOffice/LibreOffice
+.~lock.*
+
+# PyCharm
+.idea/*
+
+
