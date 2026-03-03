@@ -19,9 +19,6 @@ INSERT INTO test_pi.participants(
 	participant_id, prenom, nom)
 	VALUES (16, 'Max', 'ZORAUD');
 
-
-
-
 -- insertion des stops
 INSERT into test_pi.stops(participant_id, date_debut, date_fin, geom) values (8, '2019-07-08 16:09:09',  '2019-07-08 17:04:27' , ST_GeomFromText('POINT(5.7166925858132 45.1850182848391)', 4326));
 INSERT into test_pi.stops(participant_id, date_debut, date_fin, geom) values (8, '2019-07-08 17:10:02',  '2019-07-08 17:34:57' , ST_GeomFromText('POINT(5.72051221975029 45.1852255146285)', 4326));

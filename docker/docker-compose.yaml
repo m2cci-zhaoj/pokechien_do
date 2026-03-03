@@ -28,7 +28,7 @@ services:
         - shared-network
        volumes:
          - pgadminData:/var/lib/pgadmin/
-   #      - C:/Users/philippe/Desktop/POOJava/PI_POC:/var/lib/pgadmin/data
+         - ./pgadminstorage:/var/lib/pgadmin/storage/admin_admin_fr  #- C:/Users/philippe/Desktop/POOJava/PI_POC:/var/lib/pgadmin/data
        depends_on: 
          - postgis-16-3.4
 
