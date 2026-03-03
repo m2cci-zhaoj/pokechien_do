@@ -1,6 +1,6 @@
 # POC (Proof Of Concepts) pour le projet d'intégration
 
-Ce projet contient le code pour une application servant de preuve de concepts (POC ou Proof Of concepet) pour le projet d'intégration du M2 CCI/M2 GEOMAS. Il contient 3 dossiers :
+Ce projet contient le code pour une application servant de preuve de concepts (POC ou Proof Of concepet) pour le projet d'intégration du M2 CCI/M2 GEOMAS. Il contient 4 dossiers :
 
 - **bd** : ce dossier regroupe les scripts de création de la base de données [PostgreSQL](https://www.postgresql.org/)/[PostGIS](https://postgis.net/). 
     - le script **createSchema.sql** crée un schema <kbd>test_pi</kbd> 
@@ -8,6 +8,8 @@ Ce projet contient le code pour une application servant de preuve de concepts (P
     - le script **createData.sql**  permet d'insérer les données dans les tables.
 - **backend** : ce dossier contient le code source du backend ([Springboot](https://spring.io/projects/spring-boot)/Java) qui permet d'offrir une API REST pour l'accès aux données de la base
 - **frontend** : ce dossier contient le code source du front-end (il utilise [Leaflet](https://leafletjs.com/) pour le web Mapping et Vue3)
+- **docker** : ce dossier le fichier **docker-compose.yaml** qui permet d’exécuter deux containers docker avec une image pour PostgreSQL et image pour PGAdmin
+
 
 Pour pouvoir exécuter cette application il faut :
 
