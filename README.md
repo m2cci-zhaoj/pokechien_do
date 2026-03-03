@@ -13,7 +13,7 @@ Ce projet contient le code pour une application servant de preuve de concepts (P
 
 Pour pouvoir exécuter cette application il faut :
 
-1. vous connecter à votre base de donnés (par exemple avec le client pgadmin) et exécuter les scripts **createSchema.sql** puis **createData.sql** situés dans le dossier bd. Vous trouverez [ICI](https://lig-membres.imag.fr/genoud/teaching/PL2AI/tds/PI/sujets/PI_POC/PI_POC.html#section01) des explications sur comment vous connecter à la base Postgres/PostGIS de l'IUGA et y créer le schéma 
+1. vous connecter à votre base de donnés (par exemple avec le client pgadmin) et exécuter les scripts **createSchema.sql** puis **createData.sql** situés dans le dossier bd. Vous trouverez [ICI](https://lig-membres.imag.fr/genoud/teaching/PL2AI/tds/PI/sujets/PI_POC/PI_POC.html#section02) des explications sur comment vous connecter à la base Postgres/PostGIS de l'IUGA et y créer le schéma 
 <strong>test_pi</strong> utilisé par cette application (à venir des explications sur comment se connecter à une base locale gérée avec un conteneur docker).
 3. Si vous utilisez une base de données autre que la base PostgreSQL de l'IUGA (par exemple un base locale) modifier le fichier **application.properties** situé dans le back-end (chemin d'accès `backend/src/main/resources`) afin 
 d'accéder à votre base de données (voir les indications en commentaire dans ce fichier).
