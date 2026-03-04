@@ -20,5 +20,7 @@ d'accéder à votre base de données (voir les indications en commentaire dans c
 4. lancer le serveur back-end en exécutant le *main* de la classe  **SpringjdbcApplication** (situé dans `main/java`) et si vous utilisez la base de données de l'IUGA renseignez vos identifiants de connexion (login et mot de passe)
 5. ouvrir avec LiveServer la page **index.html** du front-end
 
+Des explications détaillées sur l'installation et l'exécution de cette application sont disponibles à l'url https://lig-membres.imag.fr/genoud/teaching/PL2AI/tds/PI/sujets/PI_POC/PI_POC.html
+
 ![PI_POC](docs/images/PI_POC.png)
 
