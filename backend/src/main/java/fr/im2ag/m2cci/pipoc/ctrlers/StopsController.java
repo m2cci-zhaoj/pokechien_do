@@ -67,8 +67,15 @@ public class StopsController {
 				});
 	}
 
+	// Dans les API REST une bonne pratique est d'utiliser
+	// - PUT pour mettre à jour/remplacer une ressource existante
+	// - POST  pour créer une nouvelle ressource
+	// les deux méthodes suivantes illustre cela :
+	// - addStop ajoute un nouveau stop
+	// - upDateStop met à jour un stop (son commentaire)
+	
 	@CrossOrigin
-	@PutMapping(path = "/stop")
+	@PostMapping(path = "/stop")
 	// @PostMapping(path = "/stop", consumes = "application/json", produces =
 	// "application/json")
 	public String addStop(@RequestBody Stop stop) {
@@ -83,8 +90,8 @@ public class StopsController {
 	}
 
 	@CrossOrigin
-	@PostMapping(path = "/stop")
-	// @PostMapping(path = "/stop", consumes = "application/json", produces =
+	@PutMapping(path = "/stop")
+	// @PutMapping(path = "/stop", consumes = "application/json", produces =
 	// "application/json")
 	public String updateStop(@RequestBody Stop stop) {
 		String query = """

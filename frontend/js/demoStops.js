@@ -113,8 +113,8 @@ const vueApp = Vue.createApp({
 				commentaire: this.selectedStopComment,
 			};
 			await fetch("http://localhost:8080/stop", {
-				method: "POST",
-				body: JSON.stringify(stop),  // transforme l'opbjet post en chaîne JSON
+				method: "PUT",
+				body: JSON.stringify(stop),  // transforme l'objet stop en chaîne JSON
 				headers: {
 					"Content-Type": "application/json",
 				},
