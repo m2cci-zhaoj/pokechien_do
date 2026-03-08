@@ -14,24 +14,211 @@
             width: 100%;
             height: 95vh;
         }
+        .welcome-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .welcome-text {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #0d6efd;
+            animation: welcomeAnim 1.2s ease-out forwards;
+        }
+        .welcome-btn {
+            animation: fadeInUp 0.8s ease-out 0.8s both;
+        }
+        @keyframes welcomeAnim {
+            0%   { opacity: 0; transform: scale(0.3); }
+            60%  { transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeInUp {
+            0%   { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
 <body>
     <div class="container-fluid">
         <div id="app">
+
+            <!-- Page de connexion / inscription / mot de passe oublié -->
+            <div v-if="!currentUser" class="row justify-content-center mt-5">
+                <div class="col-md-4">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link" :class="{active: authView==='login'}"
+                                        @click.prevent="authView='login'" href="#">Connexion</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" :class="{active: authView==='register'}"
+                                        @click.prevent="authView='register'" href="#">Créer un compte</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" :class="{active: authView==='forgot'}"
+                                        @click.prevent="authView='forgot'" href="#">Mot de passe oublié</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <!-- Onglet Connexion -->
+                            <form v-if="authView==='login'" @submit.prevent="login">
+                                <div class="mb-3">
+                                    <label for="loginInput" class="form-label">Login</label>
+                                    <input type="text" class="form-control" id="loginInput"
+                                        v-model="loginData.login" placeholder="votre login" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="passwordInput" class="form-label">Mot de passe</label>
+                                    <input type="password" class="form-control" id="passwordInput"
+                                        v-model="loginData.password" placeholder="votre mot de passe" required>
+                                </div>
+                                <p v-if="loginError" class="text-danger">{{ loginError }}</p>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Se connecter</button>
+                                </div>
+                            </form>
+
+                            <!-- Onglet Créer un compte -->
+                            <form v-else-if="authView==='register'" @submit.prevent="register">
+                                <div class="row g-2 mb-3">
+                                    <div class="col">
+                                        <label class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" v-model="registerData.prenom"
+                                            placeholder="votre prénom" required>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label">Nom</label>
+                                        <input type="text" class="form-control" v-model="registerData.nom"
+                                            placeholder="votre nom" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Login</label>
+                                    <input type="text" class="form-control" v-model="registerData.login"
+                                        placeholder="choisir un login" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Mot de passe</label>
+                                    <input type="password" class="form-control" v-model="registerData.password"
+                                        placeholder="choisir un mot de passe" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Confirmer le mot de passe</label>
+                                    <input type="password" class="form-control" v-model="registerData.confirmPassword"
+                                        placeholder="confirmer le mot de passe" required>
+                                </div>
+                                <p v-if="registerError" class="text-danger">{{ registerError }}</p>
+                                <p v-if="registerSuccess" class="text-success">Compte créé ! Vous pouvez vous connecter.</p>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">Créer le compte</button>
+                                </div>
+                            </form>
+
+                            <!-- Onglet Mot de passe oublié -->
+                            <form v-else-if="authView==='forgot'" @submit.prevent="resetPassword">
+                                <p class="text-muted small mb-3">Renseignez votre login, nom et prénom pour vérifier votre identité.</p>
+                                <div class="mb-3">
+                                    <label class="form-label">Login</label>
+                                    <input type="text" class="form-control" v-model="resetData.login"
+                                        placeholder="votre login" required>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col">
+                                        <label class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" v-model="resetData.prenom"
+                                            placeholder="votre prénom" required>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label">Nom</label>
+                                        <input type="text" class="form-control" v-model="resetData.nom"
+                                            placeholder="votre nom" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nouveau mot de passe</label>
+                                    <input type="password" class="form-control" v-model="resetData.newPassword"
+                                        placeholder="nouveau mot de passe" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Confirmer le mot de passe</label>
+                                    <input type="password" class="form-control" v-model="resetData.confirmPassword"
+                                        placeholder="confirmer le mot de passe" required>
+                                </div>
+                                <p v-if="resetError" class="text-danger">{{ resetError }}</p>
+                                <p v-if="resetSuccess" class="text-success">Mot de passe modifié ! Vous pouvez vous connecter.</p>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-warning">Réinitialiser</button>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page de bienvenue (après connexion) -->
+            <div v-else-if="showWelcome" class="welcome-page">
+                <div class="welcome-text">{{ welcomeMessage }}</div>
+                <p class="text-muted mt-3 welcome-btn">Bonjour <strong>{{ currentUser }}</strong></p>
+                <button @click="goToMap" class="btn btn-primary btn-lg mt-4 welcome-btn">
+                    Consulter mes traces séquencées
+                </button>
+                <button @click="logout" class="btn btn-link mt-3 welcome-btn text-secondary">Déconnexion</button>
+            </div>
+
+            <!-- Application principale (carte) -->
+            <div v-else>
+                <div class="row mt-2 mb-1 align-items-center">
+                    <div class="col">
+                        <span class="text-muted">How are you today <strong>{{ currentUser }}</strong> ?</span>
+                    </div>
+                </div>
             <div class="row mt-3">
                 <div class="col-xl-4">
-                    <form @submit.prevent="findParticipants" class="row g-3">
-                        <div class="col-auto">
-                            <label for="name" class="form-label">Nom : </label>
+                    <!-- Bouton trajectoires -->
+                    <div class="mb-3" v-if="movesLayer">
+                        <button @click="toggleMoves" class="btn btn-sm"
+                            :class="movesVisible ? 'btn-warning' : 'btn-outline-warning'">
+                            {{ movesVisible ? 'Masquer les trajectoires' : 'Afficher les trajectoires' }}
+                        </button>
+                    </div>
+                    <!-- Filtre par période et heure -->
+                    <form @submit.prevent="filterStops" class="mb-3">
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col">
+                                <label for="dateDebut" class="form-label">Date début</label>
+                                <input type="date" class="form-control" id="dateDebut" v-model="filterDateDebut">
+                            </div>
+                            <div class="col">
+                                <label for="heureDebut" class="form-label">Heure début</label>
+                                <input type="time" class="form-control" id="heureDebut" v-model="filterHeureDebut">
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <input type="text" class="form-control" id="name" v-model="participantName"
-                                placeholder="nom à chercher">
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col">
+                                <label for="dateFin" class="form-label">Date fin</label>
+                                <input type="date" class="form-control" id="dateFin" v-model="filterDateFin">
+                            </div>
+                            <div class="col">
+                                <label for="heureFin" class="form-label">Heure fin</label>
+                                <input type="time" class="form-control" id="heureFin" v-model="filterHeureFin">
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary mb-3">Chercher</button>
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">Filtrer</button>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-outline-secondary" @click="resetFilter">Tout afficher</button>
+                            </div>
                         </div>
                     </form>
                     <template v-if="participants">
@@ -93,6 +280,23 @@
                                         <input type="text" class="form-control" id="dateFinInput"
                                             :value="(selectedStop)?selectedStop.date_fin:''" disabled>
                                     </div>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col">
+                                            <label class="form-label">Durée du stop</label>
+                                            <input type="text" class="form-control"
+                                                :value="(selectedStop)?selectedStop.duree:''" disabled>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label">Distance (stop précédent)</label>
+                                            <input type="text" class="form-control"
+                                                :value="(selectedStop)?selectedStop.distance:''" disabled>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label">Vitesse moyenne</label>
+                                            <input type="text" class="form-control"
+                                                :value="(selectedStop)?selectedStop.vitesse:''" disabled>
+                                        </div>
+                                    </div>
                                     <div class="mb-3">
                                         <label for="commentaireTextArea" class="form-label">Commentaire</label>
                                         <textarea class="form-control" v-model="selectedStopComment"
@@ -147,6 +351,12 @@
                 </div>
 
             </div> <!-- fin du row -->
+                <div class="row mt-3 mb-2">
+                    <div class="col text-center">
+                        <button @click="logout" class="btn btn-outline-secondary btn-sm">Déconnexion</button>
+                    </div>
+                </div>
+            </div> <!-- fin v-else (application principale) -->
         </div>
     </div>
 

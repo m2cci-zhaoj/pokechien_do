@@ -3,21 +3,21 @@ DELETE FROM test_pi.participants;
 
 -- insertions des participants
 INSERT INTO test_pi.participants(
-	participant_id, prenom, nom)
-	VALUES (8, 'Jean', 'DUPONT');
+	participant_id, prenom, nom, login, password)
+	VALUES (8, 'Jean', 'DUPONT', 'jean.dupont', 'dupont8');
 
 INSERT INTO test_pi.participants(
-	participant_id, prenom, nom)
-	VALUES (12, 'Marie', 'DURAND');
+	participant_id, prenom, nom, login, password)
+	VALUES (12, 'Marie', 'DURAND', 'marie.durand', 'durand12');
 
 
 INSERT INTO test_pi.participants(
-	participant_id, prenom, nom)
-	VALUES (14, 'Shopie', 'DOE');
+	participant_id, prenom, nom, login, password)
+	VALUES (14, 'Shopie', 'DOE', 'shopie.doe', 'doe14');
 
 INSERT INTO test_pi.participants(
-	participant_id, prenom, nom)
-	VALUES (16, 'Max', 'ZORAUD');
+	participant_id, prenom, nom, login, password)
+	VALUES (16, 'Max', 'ZORAUD', 'max.zoraud', 'zoraud16');
 
 -- insertion des stops
 INSERT into test_pi.stops(participant_id, date_debut, date_fin, geom) values (8, '2019-07-08 16:09:09',  '2019-07-08 17:04:27' , ST_GeomFromText('POINT(5.7166925858132 45.1850182848391)', 4326));

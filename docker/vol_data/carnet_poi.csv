@@ -1,0 +1,8 @@
+i_id_poi;i_id_pers_session;s_code_poi;s_code_act;s_nom_poi;i_num_rue;s_nom_rue;i_code_postal;s_nom_com;s_information;s_obs_enq;s_obs_saisie
+1;80;a;domicile;domicile;;avenue de vizille;;grenoble;;;
+2;80;b;sociabilité, restauration;le bar le trankilou;;boulevard vallier;;grenoble;entre les stations vallier calmette et vallier catane;;
+3;80;c;travail;travail bateg;1241;rue des résidences;;saint martin d'heres;;;
+4;80;d;restauration;bagel/ table verte;;;;saint martin d'heres;campus universitaire, arrêt bibliotheque universitaire;;
+5;80;e;restauration;subway;;;;grenoble;boulevard gambetta, en face du lycee champollion;;
+6;80;f;achat;super u;11;avenue de vizille;;grenoble;;;
+7;80;g;loisirs culturels;la bobine;;parc paul mistral;;grenoble;;;

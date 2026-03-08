@@ -4,7 +4,7 @@ services:
    postgis-16-3.4:
        image: postgis/postgis:16-3.4
        ports:  #outside:inside(container)
-            - 5432:5432
+            - 4202:5432
        networks:
             - shared-network 
        volumes:
@@ -23,7 +23,7 @@ services:
         - PGADMIN_DEFAULT_EMAIL=admin@admin.fr
         - PGADMIN_DEFAULT_PASSWORD=password
        ports:
-        - 8081:80  #outside:inside(container)
+        - 4201:80  #outside:inside(container)
        networks:
         - shared-network
        volumes:

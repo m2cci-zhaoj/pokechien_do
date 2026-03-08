@@ -6,7 +6,9 @@ CREATE SCHEMA test_pi;
 CREATE TABLE test_pi.participants(
 	participant_id INTEGER PRIMARY KEY,
 	prenom VARCHAR(255),
-	nom VARCHAR(255)
+	nom VARCHAR(255),
+	login VARCHAR(255) UNIQUE,
+	password VARCHAR(255)
 );
 
 CREATE TABLE test_pi.stops (

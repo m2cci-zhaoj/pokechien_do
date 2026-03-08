@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.im2ag.m2cci.pipoc.dto.Stop;
@@ -37,34 +38,55 @@ public class StopsController {
 
 	@CrossOrigin
 	@GetMapping("/stops/{participant_id}")
-	public String stops(@PathVariable("participant_id") int participant_id) {
-		String query = """
-				SELECT
-					json_build_object(
-					  'type', 'FeatureCollection',
-					  'features', json_agg(ST_AsGeoJSON(t.*)::json)
-					)
-				  FROM
-					test_pi.stops AS t
-				  WHERE
-					t.participant_id = ?
-				""";
+	public String stops(
+			@PathVariable("participant_id") int participant_id,
+			@RequestParam(value = "dateDebut", required = false) String dateDebut,
+			@RequestParam(value = "dateFin", required = false) String dateFin) {
 
-		return jdbcTemplate.query(query, // la requête (prepared statement)
-				new Object[] { participant_id }, // un tableau d'objets contenant les valeurs à substituer
-				new int[] { java.sql.Types.INTEGER }, // tableau d'entiers indiquant les types SQL des valeurs à
-														// substituer
-				(rs) -> {
-					if (rs.next()) {
-						return rs.getString(1); // le résultat de la requête est une chaîne GeoJSON
-					}
-					// pas de stops , mais on ne devrait jamais arriver ici car si il n'existe pas
-					// de
-					// stops pour le participant, la requête renvoie tout de même une réponse
-					// GeoJSOn avec l'attibut features égal à null:
-					// {"type" : "FeatureCollection", "features" : null}
-					return ("");
-				});
+		String query;
+		Object[] params;
+		int[] types;
+
+		if (dateDebut != null && dateFin != null) {
+			// filtre par période
+			query = """
+					SELECT
+						json_build_object(
+						  'type', 'FeatureCollection',
+						  'features', json_agg(ST_AsGeoJSON(t.*)::json)
+						)
+					  FROM
+						test_pi.stops AS t
+					  WHERE
+						t.participant_id = ?
+						AND t.date_debut >= ?::timestamp
+						AND t.date_debut <= ?::timestamp
+					""";
+			params = new Object[] { participant_id, dateDebut, dateFin };
+			types = new int[] { java.sql.Types.INTEGER, java.sql.Types.VARCHAR, java.sql.Types.VARCHAR };
+		} else {
+			// sans filtre
+			query = """
+					SELECT
+						json_build_object(
+						  'type', 'FeatureCollection',
+						  'features', json_agg(ST_AsGeoJSON(t.*)::json)
+						)
+					  FROM
+						test_pi.stops AS t
+					  WHERE
+						t.participant_id = ?
+					""";
+			params = new Object[] { participant_id };
+			types = new int[] { java.sql.Types.INTEGER };
+		}
+
+		return jdbcTemplate.query(query, params, types, (rs) -> {
+			if (rs.next()) {
+				return rs.getString(1);
+			}
+			return ("");
+		});
 	}
 
 	// Dans les API REST une bonne pratique est d'utiliser
