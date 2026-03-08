@@ -1,0 +1,17 @@
+{
+  "group" : "GNN",
+  "members" : [
+    {
+      "login" : "noezarwin",
+      "firstname" : "Noe",
+      "lastname" : "ZARWIN",
+      "email" : "noezarwin@gmail.com",
+    },
+    {
+      "login" : "babako12",
+      "firstname" : "Babako",
+      "lastname" : "SCHMIDT",
+      "email" : "babako.schmidt@etu.univ-grenoble-alpes.fr"
+    }
+  ]
+}
