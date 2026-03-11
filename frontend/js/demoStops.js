@@ -1,5 +1,10 @@
-const participantsUrl = "http://localhost:8080/participants/find?nom=";
-const loginUrl = "http://localhost:8080/auth/login";
+// 修改此处的 IP 地址以切换后端连接（手机热点时改为电脑局域网 IP）
+const API_BASE = "http://localhost:8080";
+// const API_BASE = "https://incomputable-supervictorious-ezekiel.ngrok-free.dev -> http://localhost:8080";
+
+
+const participantsUrl = API_BASE + "/participants/find?nom=";
+const loginUrl = API_BASE + "/auth/login";
 let myModal = null;
 class APIError extends Error {
     constructor(mess, status, statusText, url) {
@@ -34,12 +39,16 @@ const vueApp = Vue.createApp({
 			participantName: "", // valeur de nom pour la recherche de participants
 			participants: null, // liste des participants trouvés correspondant au nom de participant saisi
 			map: null, // la map associée à la vue
-			selectedStop: null, // le stop sélectionné
-			selectedStopComment: null, // le commentaire du stop sélectionné
+			selectedStop: null,        // stop sélectionné
+			selectedStopType: null,    // type du stop : 'mbgp' (GPS calculé) ou 'manual' (saisi manuellement)
+			selectedStopComment: null, // commentaire du stop sélectionné
 			colors: ["#e9002c", "#c7ff39", "#bba958", "#c1ca7f", "#d8e7ad", "#edcf6e", "#dca28a", "#c27990", "#a0577f", "#744348"],
 			movesVisible: true, // visibilité des trajectoires
 			movesLayer: null,   // layer Leaflet des trajectoires
 			erreur : null, // objet Error en cas d'erreur d'exécution
+			gpsWatchId: null,   // ID du watcher geolocation
+			isTracking: false,  // true = collecte GPS en cours
+			gpsPointCount: 0,   // nombre de points collectés
 		};
 	},
 	methods: {
@@ -74,7 +83,7 @@ const vueApp = Vue.createApp({
 				this.registerError = "Les mots de passe ne correspondent pas";
 				return;
 			}
-			const response = await fetch("http://localhost:8080/auth/register", {
+			const response = await fetch(API_BASE + "/auth/register", {
 				method: "POST",
 				body: JSON.stringify({
 					login: this.registerData.login,
@@ -103,7 +112,7 @@ const vueApp = Vue.createApp({
 				this.resetError = "Les mots de passe ne correspondent pas";
 				return;
 			}
-			const response = await fetch("http://localhost:8080/auth/reset-password", {
+			const response = await fetch(API_BASE + "/auth/reset-password", {
 				method: "POST",
 				body: JSON.stringify({
 					login: this.resetData.login,
@@ -139,8 +148,9 @@ const vueApp = Vue.createApp({
 			const meParticipant = {
 				id: this.currentParticipantId,
 				markerColor: "#0d6efd",
-				stopsLayer: null,
+				stopsLayer: null,        // layer stops GPS (stop_mbgp)
 				stopsVisible: false,
+				manualStopsLayer: null,  // layer stops manuels (stops)
 			};
 			this.participants = [meParticipant];
 			await this.displayStops(meParticipant);
@@ -153,6 +163,7 @@ const vueApp = Vue.createApp({
 			if (this.participants) {
 				for (let participant of this.participants) {
 					if (participant.stopsLayer) participant.stopsLayer.remove(this.map);
+					if (participant.manualStopsLayer) participant.manualStopsLayer.remove(this.map);
 				}
 			}
 			if (this.movesLayer) {
@@ -173,6 +184,7 @@ const vueApp = Vue.createApp({
 				if (this.participants && this.participants.length > 0) {
 					for (let participant of this.participants) {
 						if (participant.stopsLayer) participant.stopsLayer.remove(this.map);
+						if (participant.manualStopsLayer) participant.manualStopsLayer.remove(this.map);
 					}
 				}
 				this.participants = null;
@@ -198,6 +210,10 @@ const vueApp = Vue.createApp({
 				participant.stopsLayer.remove(this.map);
 				participant.stopsLayer = null;
 			}
+			if (participant.manualStopsLayer) {
+				participant.manualStopsLayer.remove(this.map);
+				participant.manualStopsLayer = null;
+			}
 			await this.displayStops(participant);
 		},
 		/**
@@ -213,6 +229,10 @@ const vueApp = Vue.createApp({
 				participant.stopsLayer.remove(this.map);
 				participant.stopsLayer = null;
 			}
+			if (participant.manualStopsLayer) {
+				participant.manualStopsLayer.remove(this.map);
+				participant.manualStopsLayer = null;
+			}
 			await this.displayStops(participant);
 		},
 		async displayStops(participant) {
@@ -226,12 +246,7 @@ const vueApp = Vue.createApp({
 					opacity: 1,
 					fillOpacity: 0.8,
 				};
-				let url = "http://localhost:8080/stops/" + participant.id;
-				if (this.filterDateDebut && this.filterDateFin) {
-					const heureDebut = this.filterHeureDebut ? this.filterHeureDebut + ":00" : "00:00:00";
-					const heureFin = this.filterHeureFin ? this.filterHeureFin + ":00" : "23:59:59";
-					url += "?dateDebut=" + this.filterDateDebut + "T" + heureDebut + "&dateFin=" + this.filterDateFin + "T" + heureFin;
-				}
+				let url = API_BASE + "/stops-mbgp/" + participant.id;
 				let response = await fetch(url);
 				let geoJSON = await response.json();
 				// si aucun résultat, features est null → on arrête ici
@@ -267,15 +282,14 @@ const vueApp = Vue.createApp({
 						//  date fin : ${feature.properties.date_fin}
 						// `);
 						layer.on("click", (evt) => {
-							console.log("click " + evt.target.defaultOptions.fillColor);
 							self.selectedStop = feature.properties;
+							self.selectedStopType = 'mbgp'; // stop GPS calculé
 							self.selectedStopComment = self.selectedStop.commentaire;
 							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
 							const myModalEl = document.getElementById("featureDetails");
 							myModalEl.addEventListener("hidden.bs.modal", (event) => {
 								evt.target.setStyle({ fillColor: evt.target.defaultOptions.fillColor });
 							});
-
 							evt.target.setStyle({ fillColor: "red" });
 							myModal.show();
 						});
@@ -285,11 +299,68 @@ const vueApp = Vue.createApp({
 			participant.stopsLayer.setStyle({ fillColor: participant.markerColor });
 			participant.stopsLayer.addTo(this.map);
 			participant.stopsVisible = true;
+			// 同时加载手动stops
+			await this.displayManualStops(participant);
+		},
+		// 加载并显示手动录入的stops（来自stops表），橙色边框区分
+		async displayManualStops(participant) {
+			let self = this;
+			if (!participant.manualStopsLayer) {
+				let manualMarkerOptions = {
+					radius: 8,
+					fillColor: participant.markerColor,
+					color: "#ff6600",  // 橙色边框区分手动stop
+					weight: 3,
+					opacity: 1,
+					fillOpacity: 0.8,
+				};
+				let url = API_BASE + "/stops/" + participant.id;
+				let response = await fetch(url);
+				let geoJSON = await response.json();
+				// 无数据时直接返回
+				if (!geoJSON.features) return;
+				// 按date_debut排序
+				geoJSON.features.sort((a, b) => new Date(a.properties.date_debut) - new Date(b.properties.date_debut));
+				// 计算时长
+				for (let i = 0; i < geoJSON.features.length; i++) {
+					const props = geoJSON.features[i].properties;
+					if (props.date_debut && props.date_fin) {
+						props.duree = self.formatDuree(new Date(props.date_fin) - new Date(props.date_debut));
+					}
+					props.distance = "-";
+					props.vitesse = "-";
+				}
+				participant.manualStopsLayer = L.geoJSON(geoJSON, {
+					pointToLayer: function (feature, latlng) {
+						return L.circleMarker(latlng, manualMarkerOptions);
+					},
+					onEachFeature: function (feature, layer) {
+						layer.on("click", (evt) => {
+							self.selectedStop = feature.properties;
+							self.selectedStopType = 'manual'; // stop manuel
+							self.selectedStopComment = self.selectedStop.commentaire;
+							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
+							const myModalEl = document.getElementById("featureDetails");
+							myModalEl.addEventListener("hidden.bs.modal", () => {
+								evt.target.setStyle({ color: "#ff6600" });
+							});
+							evt.target.setStyle({ fillColor: "red" });
+							myModal.show();
+						});
+					},
+				});
+			}
+			participant.manualStopsLayer.setStyle({ fillColor: participant.markerColor });
+			participant.manualStopsLayer.addTo(this.map);
 		},
 		async hideStops(participant) {
 			if (participant.stopsLayer) {
 				participant.stopsLayer.remove(this.map);
 				participant.stopsVisible = false;
+			}
+			// 同时隐藏手动stops
+			if (participant.manualStopsLayer) {
+				participant.manualStopsLayer.remove(this.map);
 			}
 		},
 		changeColor(event, participant) {
@@ -313,7 +384,7 @@ const vueApp = Vue.createApp({
 				this.movesLayer.remove(this.map);
 				this.movesLayer = null;
 			}
-			const response = await fetch("http://localhost:8080/moves/" + participantId);
+			const response = await fetch(API_BASE + "/moves/" + participantId);
 			const geoJSON = await response.json();
 			if (!geoJSON.features || geoJSON.features.length === 0) return;
 			this.movesLayer = L.geoJSON(geoJSON, {
@@ -334,23 +405,85 @@ const vueApp = Vue.createApp({
 				this.movesVisible = true;
 			}
 		},
-		async updateStop() {
-			console.log(this.selectedStopComment);
-			this.selectedStop.commentaire = this.selectedStopComment;
-			let stop = {
-				stopId: this.selectedStop.stop_id,
-				participantId: this.selectedStop.particpantId,
-				latitude: 0, // n'a pas d'importance pour la mise à jour
-				longitude: 0, // n'a pas d'importance pour la mise à jour
-				commentaire: this.selectedStopComment,
-			};
-			await fetch("http://localhost:8080/stop", {
-				method: "PUT",
-				body: JSON.stringify(stop),  // transforme l'objet stop en chaîne JSON
-				headers: {
-					"Content-Type": "application/json",
+		/**
+		 * démarrer la collecte GPS depuis le téléphone
+		 */
+		startTracking() {
+			if (!navigator.geolocation) {
+				alert("Géolocalisation non supportée par ce navigateur");
+				return;
+			}
+			this.isTracking = true;
+			this.gpsPointCount = 0;
+			this.gpsWatchId = navigator.geolocation.watchPosition(
+				async (position) => {
+					await fetch(API_BASE + "/api/gps", {
+						method: "POST",
+						body: JSON.stringify({
+							i_id_pers: this.currentParticipantId,
+							dt_date_utc: new Date().toISOString().slice(0, 19),
+							r_lat: position.coords.latitude,
+							r_lon: position.coords.longitude,
+						}),
+						headers: { "Content-Type": "application/json" },
+					});
+					this.gpsPointCount++;
 				},
+				(err) => console.error("GPS error:", err),
+				{ enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+			);
+		},
+		/**
+		 * arrêter la collecte GPS
+		 */
+		stopTracking() {
+			navigator.geolocation.clearWatch(this.gpsWatchId);
+			this.gpsWatchId = null;
+			this.isTracking = false;
+		},
+		/**
+		 * calculer stops/moves et rafraîchir la carte
+		 */
+		async computeTrajectory() {
+			await fetch(`${API_BASE}/api/gps/process/${this.currentParticipantId}`, {
+				method: "POST",
 			});
+			// rafraîchir stops
+			const participant = this.participants[0];
+			if (participant.stopsLayer) {
+				participant.stopsLayer.remove(this.map);
+				participant.stopsLayer = null;
+			}
+			await this.displayStops(participant);
+			// rafraîchir moves
+			await this.displayMoves(this.currentParticipantId);
+		},
+		async updateStop() {
+			this.selectedStop.commentaire = this.selectedStopComment;
+			if (this.selectedStopType === 'mbgp') {
+				// 更新GPS计算的stop备注 → PUT /stop-mbgp
+				await fetch(API_BASE + "/stop-mbgp", {
+					method: "PUT",
+					body: JSON.stringify({
+						stopId: this.selectedStop.i_stop_id,
+						commentaire: this.selectedStopComment,
+					}),
+					headers: { "Content-Type": "application/json" },
+				});
+			} else {
+				// 更新手动录入的stop备注 → PUT /stop
+				await fetch(API_BASE + "/stop", {
+					method: "PUT",
+					body: JSON.stringify({
+						stopId: this.selectedStop.stop_id,
+						participantId: this.currentParticipantId,
+						latitude: 0,
+						longitude: 0,
+						commentaire: this.selectedStopComment,
+					}),
+					headers: { "Content-Type": "application/json" },
+				});
+			}
 			myModal.hide();
 		},
 	},

@@ -1,3 +1,5 @@
+
+//轨迹组件，未区分stop中的arret lieu 和arret d'activite
 package fr.im2ag.m2cci.pipoc.ctrlers;
 
 import static java.sql.Types.INTEGER;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.im2ag.m2cci.pipoc.dto.Stop;
+import fr.im2ag.m2cci.pipoc.dto.StopMbgpUpdate;
 
 @RestController
 public class StopsController {
@@ -89,13 +92,43 @@ public class StopsController {
 		});
 	}
 
+	@CrossOrigin
+	@GetMapping("/stops-mbgp/{participant_id}")
+	public String stopsMbgp(@PathVariable("participant_id") int participantId) {
+		String query = """
+				SELECT json_build_object(
+				    'type', 'FeatureCollection',
+				    'features', COALESCE(json_agg(ST_AsGeoJSON(t.*)::json), '[]'::json)
+				)
+				FROM (
+				    SELECT
+				        s.i_stop_id,
+				        s.commentaire,
+				        g_start.dt_date_utc AS date_debut,
+				        g_end.dt_date_utc   AS date_fin,
+				        s.geom
+				    FROM test_pi.stop_mbgp s
+				    JOIN test_pi.mesure_gps g_start ON s.i_pid_start = g_start.i_pid
+				    JOIN test_pi.mesure_gps g_end   ON s.i_pid_end   = g_end.i_pid
+				    WHERE g_start.i_id_pers = ?
+				) t
+				""";
+		return jdbcTemplate.query(query,
+				new Object[] { participantId },
+				new int[] { java.sql.Types.INTEGER },
+				(rs) -> {
+					if (rs.next()) return rs.getString(1);
+					return "{}";
+				});
+	}
+
 	// Dans les API REST une bonne pratique est d'utiliser
 	// - PUT pour mettre à jour/remplacer une ressource existante
 	// - POST  pour créer une nouvelle ressource
 	// les deux méthodes suivantes illustre cela :
 	// - addStop ajoute un nouveau stop
 	// - upDateStop met à jour un stop (son commentaire)
-	
+
 	@CrossOrigin
 	@PostMapping(path = "/stop")
 	// @PostMapping(path = "/stop", consumes = "application/json", produces =
@@ -121,6 +154,19 @@ public class StopsController {
 						""";
 		jdbcTemplate.update(query,
 				new Object[] { stop.commentaire(), stop.stopId() },
+				new int[] { VARCHAR, INTEGER });
+		return "OK";
+	}
+
+	// 更新 GPS 计算得到的 stop_mbgp 表中的备注
+	@CrossOrigin
+	@PutMapping(path = "/stop-mbgp")
+	public String updateStopMbgp(@RequestBody StopMbgpUpdate stopUpdate) {
+		String query = """
+				UPDATE test_pi.stop_mbgp SET commentaire = ? WHERE i_stop_id = ?
+						""";
+		jdbcTemplate.update(query,
+				new Object[] { stopUpdate.commentaire(), stopUpdate.stopId() },
 				new int[] { VARCHAR, INTEGER });
 		return "OK";
 	}

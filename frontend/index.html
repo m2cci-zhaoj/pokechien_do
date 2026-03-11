@@ -183,6 +183,21 @@
                 </div>
             <div class="row mt-3">
                 <div class="col-xl-4">
+                    <!-- Collecte GPS -->
+                    <div class="mb-3 d-flex gap-2 align-items-center">
+                        <button @click="startTracking" :disabled="isTracking" class="btn btn-success btn-sm">
+                            Démarrer GPS
+                        </button>
+                        <button @click="stopTracking" :disabled="!isTracking" class="btn btn-danger btn-sm">
+                            Arrêter
+                        </button>
+                        <button @click="computeTrajectory" :disabled="isTracking" class="btn btn-primary btn-sm">
+                            Calculer stops/moves
+                        </button>
+                        <span v-if="isTracking" class="text-success small">
+                            {{ gpsPointCount }} points
+                        </span>
+                    </div>
                     <!-- Bouton trajectoires -->
                     <div class="mb-3" v-if="movesLayer">
                         <button @click="toggleMoves" class="btn btn-sm"
@@ -264,8 +279,10 @@
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Stop n°
-                                        {{(selectedStop)?selectedStop.stop_id:''}}</h1>
+                                    <h1 class="modal-title fs-5" id="staticBackdropLabel">
+                                        {{ selectedStopType === 'mbgp' ? 'Stop GPS' : 'Stop manuel' }} n°
+                                        {{ selectedStop ? (selectedStopType === 'mbgp' ? selectedStop.i_stop_id : selectedStop.stop_id) : '' }}
+                                    </h1>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                                 </div>

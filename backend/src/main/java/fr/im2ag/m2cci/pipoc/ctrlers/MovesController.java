@@ -1,3 +1,5 @@
+
+//轨迹组件，未区分stop中的arret lieu 和arret d'activite
 package fr.im2ag.m2cci.pipoc.ctrlers;
 
 import static java.sql.Types.INTEGER;
