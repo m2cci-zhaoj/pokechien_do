@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import fr.im2ag.m2cci.pipoc.dto.CarnetActiviteRequest;
 import fr.im2ag.m2cci.pipoc.dto.Stop;
 import fr.im2ag.m2cci.pipoc.dto.StopMbgpUpdate;
 
@@ -95,6 +96,7 @@ public class StopsController {
 	@CrossOrigin
 	@GetMapping("/stops-mbgp/{participant_id}")
 	public String stopsMbgp(@PathVariable("participant_id") int participantId) {
+		// LEFT JOIN carnet_activite 以便在 GeoJSON 属性中包含活动类型和地点名称
 		String query = """
 				SELECT json_build_object(
 				    'type', 'FeatureCollection',
@@ -104,12 +106,16 @@ public class StopsController {
 				    SELECT
 				        s.i_stop_id,
 				        s.commentaire,
+				        s.i_id_carnet_a,
+				        ca.s_code_act,
+				        ca.s_non_poi,
 				        g_start.dt_date_utc AS date_debut,
 				        g_end.dt_date_utc   AS date_fin,
 				        s.geom
 				    FROM test_pi.stop_mbgp s
 				    JOIN test_pi.mesure_gps g_start ON s.i_pid_start = g_start.i_pid
 				    JOIN test_pi.mesure_gps g_end   ON s.i_pid_end   = g_end.i_pid
+				    LEFT JOIN test_pi.carnet_activite ca ON s.i_id_carnet_a = ca.i_id_carnet_a
 				    WHERE g_start.i_id_pers = ?
 				) t
 				""";
@@ -120,6 +126,58 @@ public class StopsController {
 					if (rs.next()) return rs.getString(1);
 					return "{}";
 				});
+	}
+
+	// 创建 carnet_activite 记录并关联到 stop_mbgp（当 stop 还没有活动记录时）
+	@CrossOrigin
+	@PostMapping(path = "/carnet-activite")
+	public String createCarnetActivite(@RequestBody CarnetActiviteRequest req) {
+		// 获取下一个可用的 i_id_carnet_a
+		Integer nextId = jdbcTemplate.queryForObject(
+				"SELECT COALESCE(MAX(i_id_carnet_a), 0) + 1 FROM test_pi.carnet_activite",
+				Integer.class);
+
+		// 从 stop_mbgp 获取时间信息（通过 mesure_gps）
+		String insertQuery = """
+				INSERT INTO test_pi.carnet_activite
+				    (i_id_carnet_a, i_id_pers_session, dt_start_act_utc, dt_end_act_utc, s_code_act, s_non_poi)
+				SELECT ?, g_start.i_id_pers,
+				       g_start.dt_date_utc, g_end.dt_date_utc,
+				       ?, ?
+				FROM test_pi.stop_mbgp s
+				JOIN test_pi.mesure_gps g_start ON s.i_pid_start = g_start.i_pid
+				JOIN test_pi.mesure_gps g_end   ON s.i_pid_end   = g_end.i_pid
+				WHERE s.i_stop_id = ?
+				""";
+		jdbcTemplate.update(insertQuery,
+				new Object[] { nextId, req.sCodeAct(), req.sNonPoi(), req.stopId() },
+				new int[] { INTEGER, VARCHAR, VARCHAR, INTEGER });
+
+		// 更新 stop_mbgp，关联刚插入的 carnet_activite
+		jdbcTemplate.update(
+				"UPDATE test_pi.stop_mbgp SET i_id_carnet_a = ? WHERE i_stop_id = ?",
+				new Object[] { nextId, req.stopId() },
+				new int[] { INTEGER, INTEGER });
+		return "OK";
+	}
+
+	// 更新已有的 carnet_activite 记录（当 stop 已关联活动时）
+	@CrossOrigin
+	@PutMapping(path = "/carnet-activite")
+	public String updateCarnetActivite(@RequestBody CarnetActiviteRequest req) {
+		// 根据 stop_mbgp 找到对应的 i_id_carnet_a
+		Integer carnetId = jdbcTemplate.queryForObject(
+				"SELECT i_id_carnet_a FROM test_pi.stop_mbgp WHERE i_stop_id = ?",
+				new Object[] { req.stopId() },
+				new int[] { INTEGER },
+				Integer.class);
+		if (carnetId == null) return "NOT_FOUND";
+
+		jdbcTemplate.update(
+				"UPDATE test_pi.carnet_activite SET s_code_act = ?, s_non_poi = ? WHERE i_id_carnet_a = ?",
+				new Object[] { req.sCodeAct(), req.sNonPoi(), carnetId },
+				new int[] { VARCHAR, VARCHAR, INTEGER });
+		return "OK";
 	}
 
 	// Dans les API REST une bonne pratique est d'utiliser

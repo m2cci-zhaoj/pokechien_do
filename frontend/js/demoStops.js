@@ -19,6 +19,7 @@ class APIError extends Error {
 const vueApp = Vue.createApp({
 	data() {
 		return {
+			currentUserPrenom: null,
 			currentUser: null, // login de l'utilisateur connecté (null = non connecté)
 			currentParticipantId: null, // participant_id de l'utilisateur connecté
 			showWelcome: false, // true = page de bienvenue, false = page carte
@@ -39,9 +40,13 @@ const vueApp = Vue.createApp({
 			participantName: "", // valeur de nom pour la recherche de participants
 			participants: null, // liste des participants trouvés correspondant au nom de participant saisi
 			map: null, // la map associée à la vue
-			selectedStop: null,        // stop sélectionné
-			selectedStopType: null,    // type du stop : 'mbgp' (GPS calculé) ou 'manual' (saisi manuellement)
-			selectedStopComment: null, // commentaire du stop sélectionné
+			selectedStop: null,          // stop sélectionné
+			selectedStopType: null,      // type du stop : 'mbgp' (GPS calculé) ou 'manual' (saisi manuellement)
+			selectedStopComment: null,   // commentaire du stop sélectionné
+			selectedStopActivite: "",    // activité du stop GPS (s_code_act de carnet_activite)
+			selectedStopNonPoi: "",      // nom du lieu (s_non_poi de carnet_activite)
+			selectedMove: null,          // move sélectionné (pour le modal déplacement)
+			selectedMoveCodeDep: "",     // mode de transport (s_code_dep de carnet_deplacement)
 			colors: ["#e9002c", "#c7ff39", "#bba958", "#c1ca7f", "#d8e7ad", "#edcf6e", "#dca28a", "#c27990", "#a0577f", "#744348"],
 			movesVisible: true, // visibilité des trajectoires
 			movesLayer: null,   // layer Leaflet des trajectoires
@@ -56,7 +61,7 @@ const vueApp = Vue.createApp({
 		 * connexion de l'utilisateur
 		 */
 		async login() {
-			this.loginError = null;
+			this.loginError = null;//清空上次的错误提示
 			const response = await fetch(loginUrl, {
 				method: "POST",
 				body: JSON.stringify(this.loginData),
@@ -66,6 +71,7 @@ const vueApp = Vue.createApp({
 				const data = await response.json();
 				this.welcomeMessage = data.message;
 				this.currentUser = this.loginData.login;
+				this.currentUserPrenom = data.prenom;  // prenom 来自后端响应，不是登录表单
 				this.currentParticipantId = data.participantId;
 				this.showWelcome = true;
 				this.loginData = { login: "", password: "" };
@@ -171,6 +177,7 @@ const vueApp = Vue.createApp({
 				this.movesLayer = null;
 			}
 			this.currentUser = null;
+			this.currentUserPrenom = null;
 			this.currentParticipantId = null;
 			this.showWelcome = false;
 			this.participants = null;
@@ -238,14 +245,6 @@ const vueApp = Vue.createApp({
 		async displayStops(participant) {
 			let self = this;
 			if (!participant.stopsLayer) {
-				let geojsonMarkerOptions = {
-					radius: 8,
-					fillColor: participant.markerColor,
-					color: "#000",
-					weight: 2,
-					opacity: 1,
-					fillOpacity: 0.8,
-				};
 				let url = API_BASE + "/stops-mbgp/" + participant.id;
 				let response = await fetch(url);
 				let geoJSON = await response.json();
@@ -274,21 +273,31 @@ const vueApp = Vue.createApp({
 				}
 				participant.stopsLayer = L.geoJSON(geoJSON, {
 					pointToLayer: function (feature, latlng) {
-						return L.circleMarker(latlng, geojsonMarkerOptions);
+						// 根据活动类型决定填充颜色，无活动则用 participant 颜色
+						const fillColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
+						return L.circleMarker(latlng, {
+							radius: 8,
+							fillColor: fillColor,
+							color: "#000",
+							weight: 2,
+							opacity: 1,
+							fillOpacity: 0.8,
+						});
 					},
 					onEachFeature: function (feature, layer) {
-						// layer.bindPopup(`<p>${participant.prenom} ${participant.nom}</p>
-						//  date début : ${feature.properties.date_debut}<br>
-						//  date fin : ${feature.properties.date_fin}
-						// `);
 						layer.on("click", (evt) => {
 							self.selectedStop = feature.properties;
 							self.selectedStopType = 'mbgp'; // stop GPS calculé
 							self.selectedStopComment = self.selectedStop.commentaire;
+							// 预填活动类型和地点名称（来自 carnet_activite JOIN 结果）
+							self.selectedStopActivite = self.selectedStop.s_code_act || "";
+							self.selectedStopNonPoi = self.selectedStop.s_non_poi || "";
 							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
 							const myModalEl = document.getElementById("featureDetails");
 							myModalEl.addEventListener("hidden.bs.modal", (event) => {
-								evt.target.setStyle({ fillColor: evt.target.defaultOptions.fillColor });
+								// 恢复活动颜色（而不是统一颜色）
+								const origColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
+								evt.target.setStyle({ fillColor: origColor });
 							});
 							evt.target.setStyle({ fillColor: "red" });
 							myModal.show();
@@ -296,7 +305,11 @@ const vueApp = Vue.createApp({
 					},
 				});
 			}
-			participant.stopsLayer.setStyle({ fillColor: participant.markerColor });
+			// 逐个图层恢复各自的活动颜色
+			participant.stopsLayer.eachLayer((layer) => {
+				const sCodeAct = layer.feature?.properties?.s_code_act;
+				layer.setStyle({ fillColor: self.activiteColor(sCodeAct) || participant.markerColor });
+			});
 			participant.stopsLayer.addTo(this.map);
 			participant.stopsVisible = true;
 			// 同时加载手动stops
@@ -372,6 +385,20 @@ const vueApp = Vue.createApp({
 		displayInfos(participant) {
 			return `id : ${participant.id} Nom : ${participant.nom} Prenom : ${participant.prenom} Nbre stops : ${participant.nbreStops}`;
 		},
+		// 根据活动类型返回对应颜色，无活动返回 null（使用 participant 颜色）
+		activiteColor(sCodeAct) {
+			const palette = {
+				domicile:     "#4a90d9",  // 蓝色 — 家
+				travail:      "#f5a623",  // 橙色 — 工作
+				achats:       "#7ed321",  // 绿色 — 购物
+				loisirs:      "#9b59b6",  // 紫色 — 休闲
+				restauration: "#e74c3c",  // 红色 — 餐饮
+				sante:        "#1abc9c",  // 青色 — 健康
+				sport:        "#f39c12",  // 黄色 — 运动
+				autre:        "#95a5a6",  // 灰色 — 其他
+			};
+			return palette[sCodeAct] || null;
+		},
 		formatDuree(ms) {
 			if (ms <= 0) return "0 min";
 			const totalMinutes = Math.floor(ms / 60000);
@@ -380,6 +407,7 @@ const vueApp = Vue.createApp({
 			return hours > 0 ? `${hours}h ${minutes}min` : `${minutes} min`;
 		},
 		async displayMoves(participantId) {
+			let self = this;
 			if (this.movesLayer) {
 				this.movesLayer.remove(this.map);
 				this.movesLayer = null;
@@ -393,8 +421,39 @@ const vueApp = Vue.createApp({
 					weight: 3,
 					opacity: 0.8,
 				},
+				onEachFeature: function (feature, layer) {
+					layer.on("click", () => {
+						// 点击轨迹线时弹出 deplacement 弹窗
+						self.selectedMove = feature.properties;
+						self.selectedMoveCodeDep = feature.properties.s_code_dep || "";
+						const moveModal = new bootstrap.Modal(document.getElementById("moveDetails"));
+						moveModal.show();
+					});
+				},
 			}).addTo(this.map);
 			this.movesVisible = true;
+		},
+		// 保存 move 的交通方式到 carnet_deplacement
+		async updateMove() {
+			if (!this.selectedMoveCodeDep) {
+				bootstrap.Modal.getInstance(document.getElementById("moveDetails")).hide();
+				return;
+			}
+			const payload = {
+				moveId: this.selectedMove.i_move_id,
+				sCodeDep: this.selectedMoveCodeDep,
+			};
+			// 已有 carnet_deplacement → PUT；否则 → POST
+			const method = this.selectedMove.i_id_carnet_d ? "PUT" : "POST";
+			await fetch(API_BASE + "/carnet-deplacement", {
+				method: method,
+				body: JSON.stringify(payload),
+				headers: { "Content-Type": "application/json" },
+			});
+			// 更新本地属性，避免下次打开时重复创建
+			this.selectedMove.i_id_carnet_d = this.selectedMove.i_id_carnet_d || true;
+			this.selectedMove.s_code_dep = this.selectedMoveCodeDep;
+			bootstrap.Modal.getInstance(document.getElementById("moveDetails")).hide();
 		},
 		toggleMoves() {
 			if (this.movesVisible) {
@@ -461,7 +520,7 @@ const vueApp = Vue.createApp({
 		async updateStop() {
 			this.selectedStop.commentaire = this.selectedStopComment;
 			if (this.selectedStopType === 'mbgp') {
-				// 更新GPS计算的stop备注 → PUT /stop-mbgp
+				// 1. 更新GPS stop备注 → PUT /stop-mbgp
 				await fetch(API_BASE + "/stop-mbgp", {
 					method: "PUT",
 					body: JSON.stringify({
@@ -470,6 +529,26 @@ const vueApp = Vue.createApp({
 					}),
 					headers: { "Content-Type": "application/json" },
 				});
+				// 2. 保存活动类型和地点（如果用户填写了活动）
+				if (this.selectedStopActivite) {
+					const carnetPayload = {
+						participantId: this.currentParticipantId,
+						stopId: this.selectedStop.i_stop_id,
+						sCodeAct: this.selectedStopActivite,
+						sNonPoi: this.selectedStopNonPoi,
+					};
+					// 已有 carnet_activite → PUT；否则 → POST
+					const method = this.selectedStop.i_id_carnet_a ? "PUT" : "POST";
+					await fetch(API_BASE + "/carnet-activite", {
+						method: method,
+						body: JSON.stringify(carnetPayload),
+						headers: { "Content-Type": "application/json" },
+					});
+					// 更新本地属性，避免下次打开弹窗时重复创建
+					this.selectedStop.i_id_carnet_a = this.selectedStop.i_id_carnet_a || true;
+					this.selectedStop.s_code_act = this.selectedStopActivite;
+					this.selectedStop.s_non_poi = this.selectedStopNonPoi;
+				}
 			} else {
 				// 更新手动录入的stop备注 → PUT /stop
 				await fetch(API_BASE + "/stop", {

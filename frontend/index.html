@@ -167,7 +167,7 @@
             <!-- Page de bienvenue (après connexion) -->
             <div v-else-if="showWelcome" class="welcome-page">
                 <div class="welcome-text">{{ welcomeMessage }}</div>
-                <p class="text-muted mt-3 welcome-btn">Bonjour <strong>{{ currentUser }}</strong></p>
+                <p class="text-muted mt-3 welcome-btn">Bonjour <strong>{{ currentUserPrenom }}</strong></p>
                 <button @click="goToMap" class="btn btn-primary btn-lg mt-4 welcome-btn">
                     Consulter mes traces séquencées
                 </button>
@@ -178,7 +178,7 @@
             <div v-else>
                 <div class="row mt-2 mb-1 align-items-center">
                     <div class="col">
-                        <span class="text-muted">How are you today <strong>{{ currentUser }}</strong> ?</span>
+                        <span class="text-muted">How are you today <strong>{{ currentUserPrenom }}</strong> ?</span>
                     </div>
                 </div>
             <div class="row mt-3">
@@ -197,6 +197,20 @@
                         <span v-if="isTracking" class="text-success small">
                             {{ gpsPointCount }} points
                         </span>
+                    </div>
+                    <!-- 图例：活动类型颜色说明 -->
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Légende stops GPS :</small>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4a90d9;border:1px solid #000"></span> Domicile</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f5a623;border:1px solid #000"></span> Travail</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#7ed321;border:1px solid #000"></span> Achats</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#9b59b6;border:1px solid #000"></span> Loisirs</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#e74c3c;border:1px solid #000"></span> Restauration</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#1abc9c;border:1px solid #000"></span> Santé</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f39c12;border:1px solid #000"></span> Sport</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#95a5a6;border:1px solid #000"></span> Autre</span>
+                        </div>
                     </div>
                     <!-- Bouton trajectoires -->
                     <div class="mb-3" v-if="movesLayer">
@@ -314,6 +328,26 @@
                                                 :value="(selectedStop)?selectedStop.vitesse:''" disabled>
                                         </div>
                                     </div>
+                                    <!-- 活动类型和地点（仅 GPS stop 显示） -->
+                                    <div v-if="selectedStopType === 'mbgp'" class="mb-3">
+                                        <label for="activiteSelect" class="form-label">Activité</label>
+                                        <select class="form-select" id="activiteSelect" v-model="selectedStopActivite">
+                                            <option value="">-- Choisir --</option>
+                                            <option value="domicile">Domicile</option>
+                                            <option value="travail">Travail</option>
+                                            <option value="achats">Achats</option>
+                                            <option value="loisirs">Loisirs</option>
+                                            <option value="restauration">Restauration</option>
+                                            <option value="sante">Santé</option>
+                                            <option value="sport">Sport</option>
+                                            <option value="autre">Autre</option>
+                                        </select>
+                                    </div>
+                                    <div v-if="selectedStopType === 'mbgp'" class="mb-3">
+                                        <label for="nonPoiInput" class="form-label">Nom du lieu</label>
+                                        <input type="text" class="form-control" id="nonPoiInput"
+                                            v-model="selectedStopNonPoi" placeholder="ex: Parc Paul Mistral">
+                                    </div>
                                     <div class="mb-3">
                                         <label for="commentaireTextArea" class="form-label">Commentaire</label>
                                         <textarea class="form-control" v-model="selectedStopComment"
@@ -327,6 +361,54 @@
                                         data-bs-dismiss="modal">Fermer</button>
                                     <button type="button" class="btn btn-primary"
                                         @click="updateStop">Enregistrer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Modal pour les détails d'un move (déplacement) -->
+                    <div class="modal fade" id="moveDetails" data-bs-backdrop="static" data-bs-keyboard="false"
+                        tabindex="-1" aria-labelledby="moveModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="moveModalLabel">
+                                        Déplacement n° {{ selectedMove ? selectedMove.i_move_id : '' }}
+                                    </h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-2 mb-3">
+                                        <div class="col">
+                                            <label class="form-label">Heure début</label>
+                                            <input type="text" class="form-control"
+                                                :value="selectedMove ? selectedMove.date_debut : ''" disabled>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label">Heure fin</label>
+                                            <input type="text" class="form-control"
+                                                :value="selectedMove ? selectedMove.date_fin : ''" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="modeDepSelect" class="form-label">Mode de transport</label>
+                                        <select class="form-select" id="modeDepSelect" v-model="selectedMoveCodeDep">
+                                            <option value="">-- Choisir --</option>
+                                            <option value="marche">À pied</option>
+                                            <option value="velo">Vélo</option>
+                                            <option value="trottinette">Trottinette</option>
+                                            <option value="bus">Bus / Tram</option>
+                                            <option value="voiture">Voiture</option>
+                                            <option value="moto">Moto / Scooter</option>
+                                            <option value="autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Fermer</button>
+                                    <button type="button" class="btn btn-primary"
+                                        @click="updateMove">Enregistrer</button>
                                 </div>
                             </div>
                         </div>

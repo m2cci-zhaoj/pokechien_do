@@ -33,9 +33,12 @@ public class AuthController {
                 WHERE login = ? AND password = ?
                 """;
         LoginResponse loginResponse = jdbcTemplate.query(
+            //query是jdbcTemplate类的一个实例方法，用于查询sql
+            //之所以是实例方法是因为Spring 自动创建了一个 JdbcTemplate 的实例，注入到 jdbcTemplate 变量里
                 query,
                 new Object[] { loginRequest.login(), loginRequest.password() },
                 new int[] { java.sql.Types.VARCHAR, java.sql.Types.VARCHAR },
+                //rs是数据库查询结果的容器
                 (rs) -> {
                     if (rs.next()) {
                         return new LoginResponse(
