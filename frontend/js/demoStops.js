@@ -154,9 +154,11 @@ const vueApp = Vue.createApp({
 			const meParticipant = {
 				id: this.currentParticipantId,
 				markerColor: "#0d6efd",
-				stopsLayer: null,        // layer stops GPS (stop_mbgp)
+				stopsLayer: null,           // layer stops GPS (stop_mbgp)
 				stopsVisible: false,
-				manualStopsLayer: null,  // layer stops manuels (stops)
+				manualStopsLayer: null,     // layer stops manuels (stops)
+				allStopsData: null,         // cache données brutes GPS stops
+				allManualStopsData: null,   // cache données brutes stops manuels
 			};
 			this.participants = [meParticipant];
 			await this.displayStops(meParticipant);
@@ -176,6 +178,7 @@ const vueApp = Vue.createApp({
 				this.movesLayer.remove(this.map);
 				this.movesLayer = null;
 			}
+			this.allMovesData = null;
 			this.currentUser = null;
 			this.currentUserPrenom = null;
 			this.currentParticipantId = null;
@@ -222,6 +225,20 @@ const vueApp = Vue.createApp({
 				participant.manualStopsLayer = null;
 			}
 			await this.displayStops(participant);
+			await this.displayMoves(this.currentParticipantId);
+		},
+		/**
+		 * 快速筛选：过去 N 天
+		 */
+		setQuickFilter(days) {
+			const end = new Date();
+			const start = new Date();
+			start.setDate(start.getDate() - days);
+			this.filterDateDebut = start.toISOString().slice(0, 10);
+			this.filterDateFin = end.toISOString().slice(0, 10);
+			this.filterHeureDebut = "";
+			this.filterHeureFin = "";
+			this.filterStops();
 		},
 		/**
 		 * réinitialiser le filtre et afficher tous les stops
@@ -241,10 +258,11 @@ const vueApp = Vue.createApp({
 				participant.manualStopsLayer = null;
 			}
 			await this.displayStops(participant);
+			await this.displayMoves(this.currentParticipantId);
 		},
 		async displayStops(participant) {
 			let self = this;
-			if (!participant.stopsLayer) {
+			if (!participant.allStopsData) {
 				let url = API_BASE + "/stops-mbgp/" + participant.id;
 				let response = await fetch(url);
 				let geoJSON = await response.json();
@@ -271,44 +289,55 @@ const vueApp = Vue.createApp({
 						props.vitesse = "-";
 					}
 				}
-				participant.stopsLayer = L.geoJSON(geoJSON, {
-					pointToLayer: function (feature, latlng) {
-						// 根据活动类型决定填充颜色，无活动则用 participant 颜色
-						const fillColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
-						return L.circleMarker(latlng, {
-							radius: 8,
-							fillColor: fillColor,
-							color: "#000",
-							weight: 2,
-							opacity: 1,
-							fillOpacity: 0.8,
-						});
-					},
-					onEachFeature: function (feature, layer) {
-						layer.on("click", (evt) => {
-							self.selectedStop = feature.properties;
-							self.selectedStopType = 'mbgp'; // stop GPS calculé
-							self.selectedStopComment = self.selectedStop.commentaire;
-							// 预填活动类型和地点名称（来自 carnet_activite JOIN 结果）
-							self.selectedStopActivite = self.selectedStop.s_code_act || "";
-							self.selectedStopNonPoi = self.selectedStop.s_non_poi || "";
-							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
-							const myModalEl = document.getElementById("featureDetails");
-							myModalEl.addEventListener("hidden.bs.modal", (event) => {
-								// 恢复活动颜色（而不是统一颜色）
-								const origColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
-								evt.target.setStyle({ fillColor: origColor });
-							});
-							evt.target.setStyle({ fillColor: "red" });
-							myModal.show();
-						});
-					},
+				participant.allStopsData = geoJSON;
+			}
+			// 按日期筛选（前端过滤，无需重新请求 API）
+			let features = participant.allStopsData.features;
+			if (this.filterDateDebut || this.filterDateFin) {
+				const debut = this.filterDateDebut
+					? new Date(this.filterDateDebut + (this.filterHeureDebut ? "T" + this.filterHeureDebut : "T00:00:00"))
+					: null;
+				const fin = this.filterDateFin
+					? new Date(this.filterDateFin + (this.filterHeureFin ? "T" + this.filterHeureFin : "T23:59:59"))
+					: null;
+				features = features.filter(f => {
+					const d = new Date(f.properties.date_debut);
+					if (debut && d < debut) return false;
+					if (fin && d > fin) return false;
+					return true;
 				});
 			}
-			// 逐个图层恢复各自的活动颜色
-			participant.stopsLayer.eachLayer((layer) => {
-				const sCodeAct = layer.feature?.properties?.s_code_act;
-				layer.setStyle({ fillColor: self.activiteColor(sCodeAct) || participant.markerColor });
+			// 重建图层
+			if (participant.stopsLayer) participant.stopsLayer.remove(this.map);
+			participant.stopsLayer = L.geoJSON({ ...participant.allStopsData, features }, {
+				pointToLayer: function (feature, latlng) {
+					const fillColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
+					return L.circleMarker(latlng, {
+						radius: 8,
+						fillColor: fillColor,
+						color: "#000",
+						weight: 2,
+						opacity: 1,
+						fillOpacity: 0.8,
+					});
+				},
+				onEachFeature: function (feature, layer) {
+					layer.on("click", (evt) => {
+						self.selectedStop = feature.properties;
+						self.selectedStopType = 'mbgp';
+						self.selectedStopComment = self.selectedStop.commentaire;
+						self.selectedStopActivite = self.selectedStop.s_code_act || "";
+						self.selectedStopNonPoi = self.selectedStop.s_non_poi || "";
+						myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
+						const myModalEl = document.getElementById("featureDetails");
+						myModalEl.addEventListener("hidden.bs.modal", () => {
+							const origColor = self.activiteColor(feature.properties.s_code_act) || participant.markerColor;
+							evt.target.setStyle({ fillColor: origColor });
+						});
+						evt.target.setStyle({ fillColor: "red" });
+						myModal.show();
+					});
+				},
 			});
 			participant.stopsLayer.addTo(this.map);
 			participant.stopsVisible = true;
@@ -318,23 +347,13 @@ const vueApp = Vue.createApp({
 		// 加载并显示手动录入的stops（来自stops表），橙色边框区分
 		async displayManualStops(participant) {
 			let self = this;
-			if (!participant.manualStopsLayer) {
-				let manualMarkerOptions = {
-					radius: 8,
-					fillColor: participant.markerColor,
-					color: "#ff6600",  // 橙色边框区分手动stop
-					weight: 3,
-					opacity: 1,
-					fillOpacity: 0.8,
-				};
+			// 首次加载时才请求 API
+			if (!participant.allManualStopsData) {
 				let url = API_BASE + "/stops/" + participant.id;
 				let response = await fetch(url);
 				let geoJSON = await response.json();
-				// 无数据时直接返回
 				if (!geoJSON.features) return;
-				// 按date_debut排序
 				geoJSON.features.sort((a, b) => new Date(a.properties.date_debut) - new Date(b.properties.date_debut));
-				// 计算时长
 				for (let i = 0; i < geoJSON.features.length; i++) {
 					const props = geoJSON.features[i].properties;
 					if (props.date_debut && props.date_fin) {
@@ -343,26 +362,52 @@ const vueApp = Vue.createApp({
 					props.distance = "-";
 					props.vitesse = "-";
 				}
-				participant.manualStopsLayer = L.geoJSON(geoJSON, {
-					pointToLayer: function (feature, latlng) {
-						return L.circleMarker(latlng, manualMarkerOptions);
-					},
-					onEachFeature: function (feature, layer) {
-						layer.on("click", (evt) => {
-							self.selectedStop = feature.properties;
-							self.selectedStopType = 'manual'; // stop manuel
-							self.selectedStopComment = self.selectedStop.commentaire;
-							myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
-							const myModalEl = document.getElementById("featureDetails");
-							myModalEl.addEventListener("hidden.bs.modal", () => {
-								evt.target.setStyle({ color: "#ff6600" });
-							});
-							evt.target.setStyle({ fillColor: "red" });
-							myModal.show();
-						});
-					},
+				participant.allManualStopsData = geoJSON;
+			}
+			// 按日期筛选
+			let features = participant.allManualStopsData.features;
+			if (this.filterDateDebut || this.filterDateFin) {
+				const debut = this.filterDateDebut
+					? new Date(this.filterDateDebut + (this.filterHeureDebut ? "T" + this.filterHeureDebut : "T00:00:00"))
+					: null;
+				const fin = this.filterDateFin
+					? new Date(this.filterDateFin + (this.filterHeureFin ? "T" + this.filterHeureFin : "T23:59:59"))
+					: null;
+				features = features.filter(f => {
+					const d = new Date(f.properties.date_debut);
+					if (debut && d < debut) return false;
+					if (fin && d > fin) return false;
+					return true;
 				});
 			}
+			const manualMarkerOptions = {
+				radius: 8,
+				fillColor: participant.markerColor,
+				color: "#ff6600",
+				weight: 3,
+				opacity: 1,
+				fillOpacity: 0.8,
+			};
+			if (participant.manualStopsLayer) participant.manualStopsLayer.remove(this.map);
+			participant.manualStopsLayer = L.geoJSON({ ...participant.allManualStopsData, features }, {
+				pointToLayer: function (_feature, latlng) {
+					return L.circleMarker(latlng, manualMarkerOptions);
+				},
+				onEachFeature: function (feature, layer) {
+					layer.on("click", (evt) => {
+						self.selectedStop = feature.properties;
+						self.selectedStopType = 'manual';
+						self.selectedStopComment = self.selectedStop.commentaire;
+						myModal = new bootstrap.Modal(document.getElementById("featureDetails"));
+						const myModalEl = document.getElementById("featureDetails");
+						myModalEl.addEventListener("hidden.bs.modal", () => {
+							evt.target.setStyle({ color: "#ff6600" });
+						});
+						evt.target.setStyle({ fillColor: "red" });
+						myModal.show();
+					});
+				},
+			});
 			participant.manualStopsLayer.setStyle({ fillColor: participant.markerColor });
 			participant.manualStopsLayer.addTo(this.map);
 		},
@@ -408,14 +453,32 @@ const vueApp = Vue.createApp({
 		},
 		async displayMoves(participantId) {
 			let self = this;
-			if (this.movesLayer) {
-				this.movesLayer.remove(this.map);
-				this.movesLayer = null;
+			// 首次加载时才请求 API
+			if (!this.allMovesData) {
+				const response = await fetch(API_BASE + "/moves/" + participantId);
+				const geoJSON = await response.json();
+				if (!geoJSON.features || geoJSON.features.length === 0) return;
+				this.allMovesData = geoJSON;
 			}
-			const response = await fetch(API_BASE + "/moves/" + participantId);
-			const geoJSON = await response.json();
-			if (!geoJSON.features || geoJSON.features.length === 0) return;
-			this.movesLayer = L.geoJSON(geoJSON, {
+			// 按日期筛选
+			let features = this.allMovesData.features;
+			if (this.filterDateDebut || this.filterDateFin) {
+				const debut = this.filterDateDebut
+					? new Date(this.filterDateDebut + (this.filterHeureDebut ? "T" + this.filterHeureDebut : "T00:00:00"))
+					: null;
+				const fin = this.filterDateFin
+					? new Date(this.filterDateFin + (this.filterHeureFin ? "T" + this.filterHeureFin : "T23:59:59"))
+					: null;
+				features = features.filter(f => {
+					const d = new Date(f.properties.date_debut);
+					if (debut && d < debut) return false;
+					if (fin && d > fin) return false;
+					return true;
+				});
+			}
+			// 重建图层
+			if (this.movesLayer) this.movesLayer.remove(this.map);
+			this.movesLayer = L.geoJSON({ ...this.allMovesData, features }, {
 				style: {
 					color: "#ff7800",
 					weight: 3,
@@ -423,7 +486,6 @@ const vueApp = Vue.createApp({
 				},
 				onEachFeature: function (feature, layer) {
 					layer.on("click", () => {
-						// 点击轨迹线时弹出 deplacement 弹窗
 						self.selectedMove = feature.properties;
 						self.selectedMoveCodeDep = feature.properties.s_code_dep || "";
 						const moveModal = new bootstrap.Modal(document.getElementById("moveDetails"));
@@ -539,11 +601,15 @@ const vueApp = Vue.createApp({
 					};
 					// 已有 carnet_activite → PUT；否则 → POST
 					const method = this.selectedStop.i_id_carnet_a ? "PUT" : "POST";
-					await fetch(API_BASE + "/carnet-activite", {
+					const carnetResp = await fetch(API_BASE + "/carnet-activite", {
 						method: method,
 						body: JSON.stringify(carnetPayload),
 						headers: { "Content-Type": "application/json" },
 					});
+					if (!carnetResp.ok) {
+						alert("Erreur lors de la sauvegarde de l'activité. Veuillez réessayer.");
+						return;
+					}
 					// 更新本地属性，避免下次打开弹窗时重复创建
 					this.selectedStop.i_id_carnet_a = this.selectedStop.i_id_carnet_a || true;
 					this.selectedStop.s_code_act = this.selectedStopActivite;

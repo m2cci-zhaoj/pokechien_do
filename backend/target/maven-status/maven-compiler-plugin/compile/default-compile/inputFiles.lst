@@ -1,0 +1,17 @@
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/SpringjdbcApplication.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/config/DataSourceConfig.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/ctrlers/AuthController.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/ctrlers/GpsController.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/ctrlers/MovesController.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/ctrlers/ParticipantsCtrler.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/ctrlers/StopsController.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/CarnetActiviteRequest.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/CarnetDeplacementRequest.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/GpsPoint.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/LoginRequest.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/LoginResponse.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/Participant.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/RegisterRequest.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/ResetPasswordRequest.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/Stop.java
+/Users/jie_zhao_2025/ProjetIntegration_Zj_AI_IOS/backend/src/main/java/fr/im2ag/m2cci/pipoc/dto/StopMbgpUpdate.java

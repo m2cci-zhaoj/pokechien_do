@@ -29,7 +29,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         String query = """
-                SELECT participant_id, nom, prenom FROM test_pi.participants
+                SELECT participant_id, nom, prenom FROM pokechien_do.participants
                 WHERE login = ? AND password = ?
                 """;
         LoginResponse loginResponse = jdbcTemplate.query(
@@ -62,7 +62,7 @@ public class AuthController {
     public ResponseEntity<String> register(@RequestBody RegisterRequest req) {
         // vérifier si le login existe déjà
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM test_pi.participants WHERE login = ?",
+                "SELECT COUNT(*) FROM pokechien_do.participants WHERE login = ?",
                 new Object[] { req.login() },
                 new int[] { java.sql.Types.VARCHAR },
                 Integer.class);
@@ -71,8 +71,8 @@ public class AuthController {
         }
         // insérer le nouveau participant (participant_id = MAX + 1)
         String query = """
-                INSERT INTO test_pi.participants(participant_id, prenom, nom, login, password)
-                VALUES ((SELECT COALESCE(MAX(participant_id), 0) + 1 FROM test_pi.participants), ?, ?, ?, ?)
+                INSERT INTO pokechien_do.participants(participant_id, prenom, nom, login, password)
+                VALUES ((SELECT COALESCE(MAX(participant_id), 0) + 1 FROM pokechien_do.participants), ?, ?, ?, ?)
                 """;
         jdbcTemplate.update(query,
                 new Object[] { req.prenom(), req.nom(), req.login(), req.password() },
@@ -86,7 +86,7 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest req) {
         // vérifier l'identité : login + nom + prenom
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM test_pi.participants WHERE login = ? AND LOWER(nom) = LOWER(?) AND LOWER(prenom) = LOWER(?)",
+                "SELECT COUNT(*) FROM pokechien_do.participants WHERE login = ? AND LOWER(nom) = LOWER(?) AND LOWER(prenom) = LOWER(?)",
                 new Object[] { req.login(), req.nom(), req.prenom() },
                 new int[] { java.sql.Types.VARCHAR, java.sql.Types.VARCHAR, java.sql.Types.VARCHAR },
                 Integer.class);
@@ -94,7 +94,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Identité non vérifiée");
         }
         jdbcTemplate.update(
-                "UPDATE test_pi.participants SET password = ? WHERE login = ?",
+                "UPDATE pokechien_do.participants SET password = ? WHERE login = ?",
                 new Object[] { req.newPassword(), req.login() },
                 new int[] { java.sql.Types.VARCHAR, java.sql.Types.VARCHAR });
         return ResponseEntity.ok("Mot de passe modifié");

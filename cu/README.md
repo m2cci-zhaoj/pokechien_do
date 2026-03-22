@@ -1,1 +1,0 @@
-Le modèle de cas d'utilisation est migré vers Coda

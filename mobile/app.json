@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "PokeChien_do",
+    "slug": "pipoc-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.im2ag.pipoc",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "L'application utilise votre position pour collecter des données GPS de mobilité."
+      }
+    },
+    "android": {
+      "package": "fr.im2ag.pipoc",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "L'application utilise votre position pour collecter des données GPS de mobilité."
+        }
+      ]
+    ]
+  }
+}

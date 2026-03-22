@@ -1,1 +1,0 @@
-Ce répertoire contient la liste des documents utilisés pendant la capture des besoins. Voir la base documentaire Coda pour plus d'information.

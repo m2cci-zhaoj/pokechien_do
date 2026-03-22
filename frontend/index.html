@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>PI POC</title>
+    <title>pokechien_do</title>
     <script src="https://unpkg.com/vue@3"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -220,6 +220,7 @@
                         </button>
                     </div>
                     <!-- Filtre par période et heure -->
+                    <!-- 筛选时段，移动端注释掉 -->
                     <form @submit.prevent="filterStops" class="mb-3">
                         <div class="row g-2 align-items-end mb-2">
                             <div class="col">
@@ -250,7 +251,14 @@
                             </div>
                         </div>
                     </form>
-                    <template v-if="participants">
+                    <!-- 按周筛选，过去3天，过去7天，过去一个月 -->
+                    <div class="mb-3 d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-info" @click="setQuickFilter(1)">Hier</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @click="setQuickFilter(3)">3 derniers jours</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @click="setQuickFilter(7)">7 derniers jours</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @click="setQuickFilter(30)">Dernier mois</button>
+                    </div>
+                    <!-- <template v-if="participants">
                         <table v-if="participants.length > 0 " class="table">
                             <thead>
                                 <tr>
@@ -286,7 +294,7 @@
                         <p v-else>
                             Pas de participant dont le nom débute par {{participantName}}
                         </p>
-                    </template>
+                    </template> -->
                     <!-- Dialogue Modal pour afficher les détails du feature sélectionné -->
                     <div class="modal fade" id="featureDetails" data-bs-backdrop="static" data-bs-keyboard="false"
                         tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">

@@ -29,13 +29,13 @@ public class GpsController {
     public ResponseEntity<String> addGpsPoint(@RequestBody GpsPoint point) {
         // générer un nouvel i_pid (MAX + 1)
         Integer maxPid = jdbcTemplate.queryForObject(
-            "SELECT COALESCE(MAX(i_pid), 0) FROM test_pi.mesure_gps",
+            "SELECT COALESCE(MAX(i_pid), 0) FROM pokechien_do.mesure_gps",
             Integer.class
         );
         int newPid = (maxPid != null ? maxPid : 0) + 1;
 
         jdbcTemplate.update("""
-                INSERT INTO test_pi.mesure_gps (i_pid, i_id_pers, i_id_session, dt_date_utc, r_lat, r_lon, geom)
+                INSERT INTO pokechien_do.mesure_gps (i_pid, i_id_pers, i_id_session, dt_date_utc, r_lat, r_lon, geom)
                 VALUES (?, ?, 1, ?::timestamp, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326))
                 """,
             newPid,
@@ -61,28 +61,28 @@ public class GpsController {
 
         // Supprimer les anciens stops/moves calculés pour ce participant
         jdbcTemplate.update("""
-                DELETE FROM test_pi.stop_mbgp
+                DELETE FROM pokechien_do.stop_mbgp
                 WHERE i_pid_start IN (
-                    SELECT i_pid FROM test_pi.mesure_gps WHERE i_id_pers = ?
+                    SELECT i_pid FROM pokechien_do.mesure_gps WHERE i_id_pers = ?
                 )
                 """, i_id_pers);
 
         jdbcTemplate.update("""
-                DELETE FROM test_pi.move_mbgp
+                DELETE FROM pokechien_do.move_mbgp
                 WHERE i_pid_start IN (
-                    SELECT i_pid FROM test_pi.mesure_gps WHERE i_id_pers = ?
+                    SELECT i_pid FROM pokechien_do.mesure_gps WHERE i_id_pers = ?
                 )
                 """, i_id_pers);
 
         // Insérer les stops : points consécutifs dans un rayon de 50m pendant >= 5 minutes
         jdbcTemplate.update("""
-                INSERT INTO test_pi.stop_mbgp (i_stop_id, i_pid_start, i_pid_end, geom)
+                INSERT INTO pokechien_do.stop_mbgp (i_stop_id, i_pid_start, i_pid_end, geom)
                 WITH pts AS (
                     SELECT i_pid, dt_date_utc, geom,
                            LAG(i_pid)       OVER (ORDER BY dt_date_utc) AS prev_pid,
                            LAG(geom)        OVER (ORDER BY dt_date_utc) AS prev_geom,
                            LAG(dt_date_utc) OVER (ORDER BY dt_date_utc) AS prev_date
-                    FROM test_pi.mesure_gps
+                    FROM pokechien_do.mesure_gps
                     WHERE i_id_pers = ?
                 ),
                 transitions AS (
@@ -109,7 +109,7 @@ public class GpsController {
                     HAVING EXTRACT(EPOCH FROM (MAX(dt_date_utc) - MIN(dt_date_utc))) >= 300
                 )
                 SELECT
-                    COALESCE((SELECT MAX(i_stop_id) FROM test_pi.stop_mbgp), 0)
+                    COALESCE((SELECT MAX(i_stop_id) FROM pokechien_do.stop_mbgp), 0)
                         + ROW_NUMBER() OVER () AS i_stop_id,
                     pid_start,
                     pid_end,
@@ -119,13 +119,13 @@ public class GpsController {
 
         // Insérer les moves : segments entre deux stops consécutifs
         jdbcTemplate.update("""
-                INSERT INTO test_pi.move_mbgp (i_move_id, i_pid_start, i_pid_end, geom)
+                INSERT INTO pokechien_do.move_mbgp (i_move_id, i_pid_start, i_pid_end, geom)
                 WITH stops AS (
                     SELECT i_stop_id, i_pid_start, i_pid_end,
                            LEAD(i_pid_start) OVER (ORDER BY i_pid_start) AS next_pid_start
-                    FROM test_pi.stop_mbgp
+                    FROM pokechien_do.stop_mbgp
                     WHERE i_pid_start IN (
-                        SELECT i_pid FROM test_pi.mesure_gps WHERE i_id_pers = ?
+                        SELECT i_pid FROM pokechien_do.mesure_gps WHERE i_id_pers = ?
                     )
                 ),
                 move_candidates AS (
@@ -136,13 +136,13 @@ public class GpsController {
                     WHERE s.next_pid_start IS NOT NULL
                 )
                 SELECT
-                    COALESCE((SELECT MAX(i_move_id) FROM test_pi.move_mbgp), 0)
+                    COALESCE((SELECT MAX(i_move_id) FROM pokechien_do.move_mbgp), 0)
                         + ROW_NUMBER() OVER () AS i_move_id,
                     mc.pid_start,
                     mc.pid_end,
                     ST_MakeLine(g.geom ORDER BY g.dt_date_utc) AS geom
                 FROM move_candidates mc
-                JOIN test_pi.mesure_gps g ON g.i_pid BETWEEN mc.pid_start AND mc.pid_end
+                JOIN pokechien_do.mesure_gps g ON g.i_pid BETWEEN mc.pid_start AND mc.pid_end
                     AND g.i_id_pers = ?
                 GROUP BY mc.pid_start, mc.pid_end
                 """, i_id_pers, i_id_pers);

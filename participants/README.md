@@ -1,1 +1,0 @@
-Le modèle de participant est migré vers Coda.

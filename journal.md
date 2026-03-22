@@ -1,25 +1,17 @@
-这里是我的工作日志
-截止至3月10日，我已经完成的工作
-已开发完成的功能
-后端 (Spring Boot)
+记录犬类主人记录遛狗活动的软件
 
-用户认证 — 登录、注册、重置密码 (AuthController.java)
-参与者管理 — 按姓名搜索、查看参与者信息及停留点数量 (ParticipantsCtrler.java)
-停留点 API — 获取所有停留点（GeoJSON）、按参与者+日期过滤、添加/更新停留点 (StopsController.java)
-轨迹 API — 获取移动轨迹（GeoJSON LineString）(MovesController.java)
-GPS 点接收与计算 — 接收GPS点上传、计算停留点和移动段（基于100m/5min算法）(GpsController.java)
-前端 (Vue 3 + Leaflet)
+3月19日
+1，修复了在输入用户名和密码的时候，只能输入一个字符，光标就会自动离开的bug
+    修复方案：Field组件，把Field移到AuthScreen外面
 
-登录/注册/密码重置表单
-Leaflet 地图展示（以格勒诺布尔为中心）
-停留点彩色标记显示、颜色自定义
-停留点详情弹窗（时间、时长、距离、平均速度、备注编辑）
-轨迹多段线展示（橙色）
-按日期范围过滤停留点
-浏览器 GPS 采集（navigator.geolocation）
-一键触发轨迹计算
-多用户支持
+2，增加手动添加stop的功能，并在stop中包含时间，照片，地点，心情，是否隐私等信息
+    
+3，迁移数据库至pokechien_do
 
-3月11日的工作
-需要完成的任务：
-1，注意currentUserPrenom的问题。未修复
+4，添加删除arret 的功能
+
+
+5，修改添加stop后的bug，成功添加stop后，再次点击这个stop，之前存入的照片无法读取
+6，arret manuel 和arret gps不再做区分，让arret gps采用和arret manuel同样的页面格式适配app功能
+
+7，对deplacement进行适配，改为遛狗的轨迹，可以标注为promenade, course à peid, randonnée等。并自动计算平均速度
