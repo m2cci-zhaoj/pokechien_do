@@ -1,2 +1,2 @@
 # pokechien_go
-for fun
+for try
